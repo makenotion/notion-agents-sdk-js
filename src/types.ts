@@ -1,0 +1,75 @@
+export type ThreadStatus = "pending" | "completed" | "failed"
+
+export type AgentData = {
+  object: "agent"
+  id: string
+  name: string
+  instruction: string | null
+}
+
+export type ThreadMessage = {
+  role: "user" | "agent"
+  content: string
+}
+
+export type ThreadData = {
+  object: "thread"
+  agent_id: string
+  thread_id: string
+  status: ThreadStatus
+  messages: Array<ThreadMessage>
+  error?: string
+}
+
+export type ChatInvocationResponse = {
+  object: "chat.invocation"
+  agent_id: string
+  thread_id: string
+  status: "pending"
+}
+
+export type AgentListResponse = {
+  object: "list"
+  type: "agent"
+  results: Array<AgentData>
+  has_more: boolean
+  next_cursor: string | null
+}
+
+export type StreamChunk =
+  | { type: "started"; thread_id: string; agent_id: string }
+  | { type: "message"; role: "user" | "agent"; content: string }
+  | { type: "done"; thread_id: string }
+  | {
+      type: "error"
+      code:
+        | "object_not_found"
+        | "validation_error"
+        | "internal_server_error"
+        | "restricted_resource"
+        | "unauthorized"
+        | "rate_limited"
+        | string
+      message: string
+    }
+
+export type ThreadInfo = {
+  thread_id: string
+  agent_id: string
+  messages: Array<ThreadMessage>
+}
+
+export type PollThreadOptions = {
+  maxAttempts?: number
+  baseDelayMs?: number
+  maxDelayMs?: number
+  initialDelayMs?: number
+  onPending?: (thread: ThreadData, attempt: number) => void
+  onThreadNotFound?: (attempt: number) => void
+}
+
+export type ClientOptions = {
+  auth: string
+  baseUrl?: string
+  notionVersion?: string
+}
