@@ -19,15 +19,16 @@ async function main() {
     }),
   })
 
-  const agents = await client.agents.list()
+  const agentsResponse = await client.agents.list()
 
-  if (agents.length === 0) {
+  if (agentsResponse.results.length === 0) {
     console.log("No agents found. Create one in Notion first!")
     return
   }
 
-  const agent = agents[0]
-  console.log(`Chatting with: ${agent.name}\n`)
+  const agentData = agentsResponse.results[0]
+  const agent = client.agents.agent(agentData.id)
+  console.log(`Chatting with: ${agentData.name}\n`)
 
   const messages = [
     "What is the capital of France?",

@@ -1,5 +1,10 @@
 import { Client } from "@notionhq/client"
-import type { ThreadData, PollThreadOptions } from "./types.js"
+import type {
+  ThreadData,
+  PollThreadOptions,
+  ThreadMessageListParams,
+  ThreadMessageListResponse,
+} from "./types.js"
 
 export class Thread {
   public readonly threadId: string
@@ -19,6 +24,21 @@ export class Thread {
     })
 
     return response
+  }
+
+  async listMessages(
+    params?: ThreadMessageListParams,
+  ): Promise<ThreadMessageListResponse> {
+    const query: Record<string, string | number> = {}
+    if (params?.role) query.role = params.role
+    if (params?.start_cursor) query.start_cursor = params.start_cursor
+    if (params?.page_size) query.page_size = params.page_size
+
+    return this.client.request<ThreadMessageListResponse>({
+      path: `threads/${this.threadId}/messages`,
+      method: "get",
+      ...(Object.keys(query).length > 0 ? { query } : {}),
+    })
   }
 
   async poll(options: PollThreadOptions = {}): Promise<ThreadData> {

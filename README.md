@@ -9,6 +9,8 @@ A TypeScript SDK for interacting with Notion Custom Agents via the public API.
 - `Thread` class for managing chat threads
 - Streaming support for real-time responses
 - Built-in polling with exponential backoff
+- Pagination support for agents, threads, and messages
+- Filtering and sorting capabilities
 - Full TypeScript support
 
 ## Installation
@@ -27,8 +29,9 @@ const client = new NotionAgentsClient({
 })
 
 // List all agents
-const agents = await client.agents.list()
-const agent = agents[0]
+const agentsResponse = await client.agents.list()
+const agentData = agentsResponse.results[0]
+const agent = client.agents.agent(agentData.id)
 
 // Start a chat
 const invocation = await agent.chat({ message: "Hello!" })
@@ -57,11 +60,38 @@ const client = new NotionAgentsClient({
 ### Listing agents
 
 ```typescript
-// List all agents
-const agents = await client.agents.list()
+// List all agents with pagination
+const agentsResponse = await client.agents.list({
+  page_size: 10,
+  start_cursor: undefined,
+})
+
+console.log(`Found ${agentsResponse.results.length} agents`)
+console.log(`Has more: ${agentsResponse.has_more}`)
+
+// Get an agent instance by ID
+const agent = client.agents.agent(agentsResponse.results[0].id)
 
 // Filter by name
-const salesAgents = await client.agents.list({ name: "Sales" })
+const salesAgents = await client.agents.list({
+  name: "Sales",
+  page_size: 5,
+})
+
+// Paginate through all agents
+let cursor = undefined
+do {
+  const response = await client.agents.list({
+    page_size: 10,
+    start_cursor: cursor,
+  })
+
+  for (const agentData of response.results) {
+    console.log(agentData.name)
+  }
+
+  cursor = response.next_cursor
+} while (cursor)
 ```
 
 ### Chatting with agents
@@ -69,11 +99,13 @@ const salesAgents = await client.agents.list({ name: "Sales" })
 #### Async mode
 
 ```typescript
-const agent = agents[0]
+// Get an agent instance
+const agentsResponse = await client.agents.list({ page_size: 1 })
+const agent = client.agents.agent(agentsResponse.results[0].id)
 
 // Start a new conversation
 const invocation = await agent.chat({ message: "Hello!" })
-console.log(invocation.thread_id) // Use this to continue the conversation
+console.log(invocation.thread_id)
 
 // Continue an existing conversation
 await agent.chat({
@@ -99,6 +131,69 @@ const threadInfo = await agent.chatStream({
     console.log(`${message.role}: ${message.content}`)
   },
 })
+```
+
+### Listing threads
+
+```typescript
+// List threads for an agent
+const threadsResponse = await agent.listThreads({
+  page_size: 10,
+  start_cursor: undefined,
+})
+
+console.log(`Found ${threadsResponse.results.length} threads`)
+
+// Filter by status
+const completedThreads = await agent.listThreads({
+  status: "completed",
+  page_size: 20,
+})
+
+// Filter by creator
+const botThreads = await agent.listThreads({
+  created_by_type: "bot",
+})
+
+// Combine filters with pagination
+const filteredThreads = await agent.listThreads({
+  status: "completed",
+  created_by_type: "bot",
+  page_size: 10,
+  start_cursor: cursor,
+})
+```
+
+### Listing thread messages
+
+```typescript
+const thread = agent.thread(threadId)
+
+// List all messages
+const messagesResponse = await thread.listMessages({
+  page_size: 20,
+})
+
+// Filter by role
+const agentMessages = await thread.listMessages({
+  role: "agent",
+  page_size: 10,
+})
+
+// Paginate through messages
+let cursor = undefined
+do {
+  const response = await thread.listMessages({
+    page_size: 20,
+    start_cursor: cursor,
+  })
+
+  for (const message of response.results) {
+    console.log(`${message.role}: ${message.content}`)
+  }
+
+  cursor = response.next_cursor
+} while (cursor)
 ```
 
 ### Working with threads
@@ -166,15 +261,35 @@ const client = new NotionAgentsClient(options: ClientOptions);
 
 Accessed via `client.agents`.
 
-#### list(options?)
+#### list(params?)
 
-Lists all accessible custom agents.
+Lists all accessible custom agents with pagination.
 
 ```typescript
-await client.agents.list({ name?: string });
+await client.agents.list({
+  name?: string,
+  page_size?: number,
+  start_cursor?: string
+});
 ```
 
-Returns: `Promise<Array<Agent>>`
+Returns: `Promise<AgentListResponse>`
+
+Response includes:
+
+- `results`: Array of agent data
+- `has_more`: Boolean indicating if more results exist
+- `next_cursor`: Cursor for the next page (null if no more results)
+
+#### agent(agentId)
+
+Creates an agent instance by ID.
+
+```typescript
+client.agents.agent(agentId: string);
+```
+
+Returns: `Agent`
 
 ### Agent
 
@@ -245,6 +360,23 @@ await agent.pollThread(threadId: string, options?: PollThreadOptions);
 
 Returns: `Promise<ThreadData>`
 
+##### listThreads(params?)
+
+Lists threads for the agent with pagination and filtering.
+
+```typescript
+await agent.listThreads({
+  title?: string,
+  status?: "pending" | "completed" | "failed",
+  created_by_type?: "user" | "bot",
+  created_by_id?: string,
+  page_size?: number,
+  start_cursor?: string
+});
+```
+
+Returns: `Promise<ThreadListResponse>`
+
 ### Thread
 
 Represents a chat thread.
@@ -276,6 +408,20 @@ await thread.poll(options?: PollThreadOptions);
 
 Returns: `Promise<ThreadData>`
 
+##### listMessages(params?)
+
+Lists messages in the thread with pagination and filtering.
+
+```typescript
+await thread.listMessages({
+  role?: "user" | "agent",
+  page_size?: number,
+  start_cursor?: string
+});
+```
+
+Returns: `Promise<ThreadMessageListResponse>`
+
 #### PollThreadOptions
 
 - `maxAttempts` (default: 60): Maximum polling attempts
@@ -302,6 +448,35 @@ dotenv.config()
 const client = new NotionAgentsClient({
   auth: process.env.NOTION_API_TOKEN,
 })
+```
+
+## Development
+
+### Running tests
+
+```bash
+# Run all tests
+npm test
+
+# Watch mode
+npm run test:watch
+
+# Coverage report
+npm run test:coverage
+```
+
+See [README.test.md](./README.test.md) for the full testing guide.
+
+### Building
+
+```bash
+npm run build
+```
+
+### Type checking
+
+```bash
+npm run typecheck
 ```
 
 ## Prerequisites

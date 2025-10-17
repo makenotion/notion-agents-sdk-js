@@ -6,6 +6,8 @@ import type {
   PollThreadOptions,
   StreamChunk,
   ThreadInfo,
+  ThreadListParams,
+  ThreadListResponse,
 } from "./types.js"
 
 export class Agent {
@@ -68,6 +70,22 @@ export class Agent {
   ): Promise<ThreadData> {
     const thread = this.thread(threadId)
     return thread.poll(options)
+  }
+
+  async listThreads(params?: ThreadListParams): Promise<ThreadListResponse> {
+    const query: Record<string, string | number> = {}
+    if (params?.title) query.title = params.title
+    if (params?.status) query.status = params.status
+    if (params?.created_by_type) query.created_by_type = params.created_by_type
+    if (params?.created_by_id) query.created_by_id = params.created_by_id
+    if (params?.start_cursor) query.start_cursor = params.start_cursor
+    if (params?.page_size) query.page_size = params.page_size
+
+    return this.client.request<ThreadListResponse>({
+      path: `agents/${this.id}/threads`,
+      method: "get",
+      ...(Object.keys(query).length > 0 ? { query } : {}),
+    })
   }
 
   async *chatStream(args: {

@@ -51,7 +51,63 @@ Demonstrates multi-turn conversations:
 - Maintaining conversation context
 - Using the same thread ID for follow-up questions
 
+### `pagination.ts`
+
+Shows pagination and filtering:
+
+- Paginating through agents with `page_size` and `start_cursor`
+- Listing threads for an agent with pagination
+- Listing messages in a thread with pagination
+- Filtering threads by status
+
 ## Key patterns
+
+### Listing agents with pagination
+
+```typescript
+const response = await client.agents.list({
+  page_size: 10,
+  start_cursor: cursor,
+})
+
+console.log(`Found ${response.results.length} agents`)
+console.log(`Has more: ${response.has_more}`)
+
+if (response.next_cursor) {
+  // Fetch next page
+}
+
+// Get an agent instance by ID
+const agent = client.agents.agent(response.results[0].id)
+```
+
+### Listing threads with filtering
+
+```typescript
+const threads = await agent.listThreads({
+  status: "completed",
+  page_size: 10,
+  start_cursor: cursor,
+})
+
+for (const thread of threads.results) {
+  console.log(`${thread.title} - ${thread.status}`)
+}
+```
+
+### Listing messages in a thread
+
+```typescript
+const thread = agent.thread(threadId)
+const messages = await thread.listMessages({
+  role: "agent",
+  page_size: 20,
+})
+
+for (const message of messages.results) {
+  console.log(`${message.role}: ${message.content}`)
+}
+```
 
 ### Using the Thread class
 

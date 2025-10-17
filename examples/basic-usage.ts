@@ -20,16 +20,17 @@ async function main() {
   })
 
   console.log("Listing agents...")
-  const agents = await client.agents.list()
-  console.log(`Found ${agents.length} agent(s)`)
+  const agentsResponse = await client.agents.list()
+  console.log(`Found ${agentsResponse.results.length} agent(s)`)
 
-  if (agents.length === 0) {
+  if (agentsResponse.results.length === 0) {
     console.log("No agents found. Create one in Notion first!")
     return
   }
 
-  const agent = agents[0]
-  console.log(`\nChatting with: ${agent.name}`)
+  const agentData = agentsResponse.results[0]
+  const agent = client.agents.agent(agentData.id)
+  console.log(`\nChatting with: ${agentData.name}`)
 
   console.log("Starting chat...")
   const invocation = await agent.chat({ message: "Hello!" })

@@ -1,6 +1,6 @@
 import { Client } from "@notionhq/client"
 import { Agent } from "./Agent.js"
-import type { AgentListResponse } from "./types.js"
+import type { AgentListResponse, AgentListParams } from "./types.js"
 
 export class AgentOperations {
   private readonly client: Client
@@ -20,24 +20,30 @@ export class AgentOperations {
     this.notionVersion = args.notionVersion ?? "2025-09-03"
   }
 
-  async list(args?: { name?: string }): Promise<Array<Agent>> {
-    const query = args?.name ? { name: args.name } : undefined
+  async list(args?: AgentListParams): Promise<AgentListResponse> {
+    const query: Record<string, string | number> = {}
+    if (args?.name) query.name = args.name
+    if (args?.start_cursor) query.start_cursor = args.start_cursor
+    if (args?.page_size) query.page_size = args.page_size
+
     const response = await this.client.request<AgentListResponse>({
       path: "agents",
       method: "get",
-      ...(query ? { query } : {}),
+      ...(Object.keys(query).length > 0 ? { query } : {}),
     })
-    return response.results.map(
-      (agent) =>
-        new Agent({
-          client: this.client,
-          id: agent.id,
-          name: agent.name,
-          instruction: agent.instruction,
-          auth: this.auth,
-          baseUrl: this.baseUrl,
-          notionVersion: this.notionVersion,
-        }),
-    )
+
+    return response
+  }
+
+  agent(agentId: string): Agent {
+    return new Agent({
+      client: this.client,
+      id: agentId,
+      name: "",
+      instruction: null,
+      auth: this.auth,
+      baseUrl: this.baseUrl,
+      notionVersion: this.notionVersion,
+    })
   }
 }
