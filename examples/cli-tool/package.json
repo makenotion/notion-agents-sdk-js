@@ -1,0 +1,22 @@
+{
+  "name": "notion-agents-cli",
+  "version": "1.0.0",
+  "description": "Interactive CLI chat tool for Notion Custom Agents",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "tsx cli.tsx",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@notionhq/agents-client": "file:../..",
+    "ink": "^5.0.1",
+    "ink-text-input": "^6.0.0",
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "typescript": "^5.9.3",
+    "tsx": "^4.20.6"
+  }
+}
