@@ -2,16 +2,19 @@ import { Client } from "@notionhq/client"
 import { Thread } from "./Thread.js"
 import type {
   ChatInvocationResponse,
-  ThreadData,
   PollThreadOptions,
   StreamChunk,
   ThreadInfo,
+  ThreadListParams,
+  ThreadListResponse,
+  ThreadListItem,
 } from "./types.js"
+import { StreamError, AgentNotFoundError } from "./errors.js"
 
 export class Agent {
   public readonly id: string
-  public readonly name: string
-  public readonly instruction: string | null
+  public readonly name?: string
+  public readonly instruction?: string | null
   private readonly client: Client
   private readonly baseUrl: string
   private readonly auth: string
@@ -20,8 +23,8 @@ export class Agent {
   constructor(args: {
     client: Client
     id: string
-    name: string
-    instruction: string | null
+    name?: string
+    instruction?: string | null
     baseUrl: string
     auth: string
     notionVersion?: string
@@ -39,14 +42,21 @@ export class Agent {
     message: string
     threadId?: string
   }): Promise<ChatInvocationResponse> {
-    return this.client.request<ChatInvocationResponse>({
-      path: `agents/${this.id}/chat`,
-      method: "post",
-      body: {
-        message: args.message,
-        ...(args.threadId ? { thread_id: args.threadId } : {}),
-      },
-    })
+    try {
+      return await this.client.request<ChatInvocationResponse>({
+        path: `agents/${this.id}/chat`,
+        method: "post",
+        body: {
+          message: args.message,
+          ...(args.threadId ? { thread_id: args.threadId } : {}),
+        },
+      })
+    } catch (error) {
+      if (this.isAgentNotFoundError(error)) {
+        throw new AgentNotFoundError(this.id)
+      }
+      throw error
+    }
   }
 
   thread(threadId: string): Thread {
@@ -57,7 +67,7 @@ export class Agent {
     })
   }
 
-  async getThread(threadId: string): Promise<ThreadData> {
+  async getThread(threadId: string): Promise<ThreadListItem> {
     const thread = this.thread(threadId)
     return thread.get()
   }
@@ -65,9 +75,42 @@ export class Agent {
   async pollThread(
     threadId: string,
     options?: PollThreadOptions,
-  ): Promise<ThreadData> {
+  ): Promise<ThreadListItem> {
     const thread = this.thread(threadId)
     return thread.poll(options)
+  }
+
+  async listThreads(params?: ThreadListParams): Promise<ThreadListResponse> {
+    const query: Record<string, string | number> = {}
+    if (params?.id) query.id = params.id
+    if (params?.title) query.title = params.title
+    if (params?.status) query.status = params.status
+    if (params?.created_by_type) query.created_by_type = params.created_by_type
+    if (params?.created_by_id) query.created_by_id = params.created_by_id
+    if (params?.start_cursor) query.start_cursor = params.start_cursor
+    if (params?.page_size) query.page_size = params.page_size
+
+    try {
+      return await this.client.request<ThreadListResponse>({
+        path: `agents/${this.id}/threads`,
+        method: "get",
+        query,
+      })
+    } catch (error) {
+      if (this.isAgentNotFoundError(error)) {
+        throw new AgentNotFoundError(this.id)
+      }
+      throw error
+    }
+  }
+
+  private isAgentNotFoundError(error: unknown): boolean {
+    return (
+      error !== null &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error.code === "object_not_found" || error.code === "validation_error")
+    )
   }
 
   async *chatStream(args: {
@@ -131,7 +174,7 @@ export class Agent {
             messagesByRole.set(chunk.role, chunk.content)
             args.onMessage?.({ role: chunk.role, content: chunk.content })
           } else if (chunk.type === "error") {
-            throw new Error(`[${chunk.code}] ${chunk.message}`)
+            throw new StreamError(chunk.message, chunk.code)
           }
         }
       }

@@ -64,7 +64,7 @@ export type PollThreadOptions = {
   baseDelayMs?: number
   maxDelayMs?: number
   initialDelayMs?: number
-  onPending?: (thread: ThreadData, attempt: number) => void
+  onPending?: (thread: ThreadListItem, attempt: number) => void
   onThreadNotFound?: (attempt: number) => void
 }
 
@@ -72,4 +72,58 @@ export type ClientOptions = {
   auth: string
   baseUrl?: string
   notionVersion?: string
+}
+
+export type PaginationParams = {
+  start_cursor?: string
+  page_size?: number
+}
+
+export type PaginatedResponse<T> = {
+  object: "list"
+  results: Array<T>
+  has_more: boolean
+  next_cursor: string | null
+}
+
+export type ThreadListItem = {
+  object: "thread"
+  id: string
+  title: string
+  status: ThreadStatus
+  created_by: {
+    id: string
+    type: "user" | "bot"
+  }
+}
+
+export type ThreadListResponse = PaginatedResponse<ThreadListItem> & {
+  type: "thread"
+}
+
+export type ThreadListParams = PaginationParams & {
+  id?: string
+  title?: string
+  status?: ThreadStatus
+  created_by_type?: "user" | "bot"
+  created_by_id?: string
+}
+
+export type ThreadMessageItem = {
+  object: "thread_message"
+  id: string
+  role: "user" | "agent"
+  content: string
+}
+
+export type ThreadMessageListResponse = PaginatedResponse<ThreadMessageItem> & {
+  type: "thread_message"
+}
+
+export type ThreadMessageListParams = PaginationParams & {
+  role?: "user" | "agent"
+}
+
+export type AgentListParams = PaginationParams & {
+  name?: string
 }
