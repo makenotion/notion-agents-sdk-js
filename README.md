@@ -449,15 +449,19 @@ The SDK provides specific error classes for different failure scenarios:
 ```typescript
 import {
   NotionAgentsError,
+  AgentNotFoundError,
   ThreadNotFoundError,
   PollingTimeoutError,
   StreamError,
 } from "@notionhq/agents-client"
 
 try {
-  const thread = await agent.getThread("invalid_id")
+  const agent = client.agents.agent("invalid_id")
+  await agent.chat({ message: "Hello" })
 } catch (error) {
-  if (error instanceof ThreadNotFoundError) {
+  if (error instanceof AgentNotFoundError) {
+    console.error(`Agent ${error.agentId} not found`)
+  } else if (error instanceof ThreadNotFoundError) {
     console.error(`Thread ${error.threadId} not found`)
   } else if (error instanceof PollingTimeoutError) {
     console.error(`Polling timed out after ${error.attempts} attempts`)
@@ -481,6 +485,8 @@ All SDK errors extend `NotionAgentsError`, which provides:
 
 **Specific errors:**
 
+- **`AgentNotFoundError`**: Agent doesn't exist or isn't accessible
+  - Additional property: `agentId`
 - **`ThreadNotFoundError`**: Thread doesn't exist or isn't accessible
   - Additional property: `threadId`
 - **`PollingTimeoutError`**: Thread polling exceeded max attempts

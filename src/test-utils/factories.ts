@@ -9,6 +9,19 @@ import type {
   ThreadMessageItem,
 } from "../types.js"
 
+export class MockNotionAPIError extends Error {
+  public readonly code: string
+  public readonly status: number
+
+  constructor(code: string, message: string, status: number) {
+    super(message)
+    this.name = "APIResponseError"
+    this.code = code
+    this.status = status
+    Object.setPrototypeOf(this, MockNotionAPIError.prototype)
+  }
+}
+
 export const mockAgentData = (overrides?: Partial<AgentData>): AgentData => ({
   object: "agent",
   id: "agent_123",
@@ -97,3 +110,47 @@ export const mockThreadMessageListResponse = (
   next_cursor: null,
   ...overrides,
 })
+
+export function mockNotionAPIError(
+  code: string,
+  message: string,
+  status: number,
+): MockNotionAPIError {
+  return new MockNotionAPIError(code, message, status)
+}
+
+export function mockAgentNotFound(agentId: string): MockNotionAPIError {
+  return mockNotionAPIError(
+    "object_not_found",
+    `Could not find agent with ID: ${agentId}.`,
+    404,
+  )
+}
+
+export function mockThreadNotFound(threadId: string): MockNotionAPIError {
+  return mockNotionAPIError(
+    "object_not_found",
+    `Could not find thread with ID: ${threadId}.`,
+    404,
+  )
+}
+
+export function mockValidationError(message: string): MockNotionAPIError {
+  return mockNotionAPIError("validation_error", message, 400)
+}
+
+export function mockRateLimitError(): MockNotionAPIError {
+  return mockNotionAPIError(
+    "rate_limited",
+    "Rate limit exceeded. Please try again later.",
+    429,
+  )
+}
+
+export function mockUnauthorizedError(): MockNotionAPIError {
+  return mockNotionAPIError(
+    "unauthorized",
+    "The bearer token is not valid.",
+    401,
+  )
+}

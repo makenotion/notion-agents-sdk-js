@@ -3,6 +3,7 @@ export {
   createMockClient,
   createReadableStream,
   mockStreamResponse,
+  mockHTTPErrorResponse,
   type MockRequestHandler,
   type MockFetchHandler,
 } from "./MockNotionClient.js"
@@ -16,4 +17,11 @@ export {
   mockThreadListResponse,
   mockThreadMessageItem,
   mockThreadMessageListResponse,
+  MockNotionAPIError,
+  mockNotionAPIError,
+  mockAgentNotFound,
+  mockThreadNotFound,
+  mockValidationError,
+  mockRateLimitError,
+  mockUnauthorizedError,
 } from "./factories.js"

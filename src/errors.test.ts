@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest"
 import {
   NotionAgentsError,
+  AgentNotFoundError,
   ThreadNotFoundError,
   PollingTimeoutError,
   StreamError,
@@ -22,6 +23,18 @@ describe("Error classes", () => {
       const error = new NotionAgentsError("Test error")
 
       expect(error.code).toBe("unknown_error")
+    })
+  })
+
+  describe("AgentNotFoundError", () => {
+    it("should create error with agent ID", () => {
+      const error = new AgentNotFoundError("agent_123")
+
+      expect(error.message).toBe("Agent agent_123 not found")
+      expect(error.code).toBe("agent_not_found")
+      expect(error.agentId).toBe("agent_123")
+      expect(error.name).toBe("AgentNotFoundError")
+      expect(error instanceof NotionAgentsError).toBe(true)
     })
   })
 

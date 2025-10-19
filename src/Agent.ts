@@ -9,7 +9,7 @@ import type {
   ThreadListResponse,
   ThreadListItem,
 } from "./types.js"
-import { StreamError } from "./errors.js"
+import { StreamError, AgentNotFoundError } from "./errors.js"
 
 export class Agent {
   public readonly id: string
@@ -42,14 +42,21 @@ export class Agent {
     message: string
     threadId?: string
   }): Promise<ChatInvocationResponse> {
-    return this.client.request<ChatInvocationResponse>({
-      path: `agents/${this.id}/chat`,
-      method: "post",
-      body: {
-        message: args.message,
-        ...(args.threadId ? { thread_id: args.threadId } : {}),
-      },
-    })
+    try {
+      return await this.client.request<ChatInvocationResponse>({
+        path: `agents/${this.id}/chat`,
+        method: "post",
+        body: {
+          message: args.message,
+          ...(args.threadId ? { thread_id: args.threadId } : {}),
+        },
+      })
+    } catch (error) {
+      if (this.isAgentNotFoundError(error)) {
+        throw new AgentNotFoundError(this.id)
+      }
+      throw error
+    }
   }
 
   thread(threadId: string): Thread {
@@ -83,11 +90,27 @@ export class Agent {
     if (params?.start_cursor) query.start_cursor = params.start_cursor
     if (params?.page_size) query.page_size = params.page_size
 
-    return this.client.request<ThreadListResponse>({
-      path: `agents/${this.id}/threads`,
-      method: "get",
-      query,
-    })
+    try {
+      return await this.client.request<ThreadListResponse>({
+        path: `agents/${this.id}/threads`,
+        method: "get",
+        query,
+      })
+    } catch (error) {
+      if (this.isAgentNotFoundError(error)) {
+        throw new AgentNotFoundError(this.id)
+      }
+      throw error
+    }
+  }
+
+  private isAgentNotFoundError(error: unknown): boolean {
+    return (
+      error !== null &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error.code === "object_not_found" || error.code === "validation_error")
+    )
   }
 
   async *chatStream(args: {

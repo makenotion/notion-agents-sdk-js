@@ -4,6 +4,7 @@ export { Thread } from "./Thread.js"
 export { AgentOperations } from "./AgentOperations.js"
 export {
   NotionAgentsError,
+  AgentNotFoundError,
   ThreadNotFoundError,
   PollingTimeoutError,
   StreamError,

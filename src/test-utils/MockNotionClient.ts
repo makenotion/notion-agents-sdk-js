@@ -75,3 +75,25 @@ export function mockStreamResponse(chunks: string[]): Response {
     body: createReadableStream(chunks),
   } as Response
 }
+
+export function mockHTTPErrorResponse(
+  status: number,
+  statusText: string,
+  body?: { code: string; message: string },
+): Response {
+  const bodyContent = body
+    ? JSON.stringify(body)
+    : JSON.stringify({
+        code: "internal_server_error",
+        message: "An error occurred",
+      })
+
+  return {
+    ok: false,
+    status,
+    statusText,
+    body: createReadableStream([bodyContent]),
+    json: async () => JSON.parse(bodyContent),
+    text: async () => bodyContent,
+  } as Response
+}

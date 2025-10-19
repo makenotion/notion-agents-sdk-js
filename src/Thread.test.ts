@@ -6,6 +6,7 @@ import {
   mockThreadListItem,
   mockThreadMessageListResponse,
   mockThreadMessageItem,
+  mockThreadNotFound,
 } from "./test-utils/index.js"
 
 describe("Thread", () => {
@@ -204,9 +205,7 @@ describe("Thread", () => {
       const mockClient = createMockClient(async () => {
         callCount++
         if (callCount < 3) {
-          const error = new Error("Object not found")
-          Object.assign(error, { code: "object_not_found" })
-          throw error
+          throw mockThreadNotFound("thread_456")
         }
         return mockThreadListResponse({
           results: [mockThreadListItem({ status: "completed" })],

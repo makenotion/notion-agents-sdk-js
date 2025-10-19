@@ -43,7 +43,6 @@ import {
   mockAgentData,
   mockAgentListResponse,
   mockChatInvocation,
-  mockThreadData,
   mockThreadListResponse,
   mockThreadMessageListResponse,
 } from "./test-utils"
@@ -59,14 +58,55 @@ const response = mockAgentListResponse({
 })
 ```
 
+### Error mocking
+
+Use realistic Notion API error mocks that match the actual SDK error format:
+
+```typescript
+import {
+  mockAgentNotFound,
+  mockThreadNotFound,
+  mockValidationError,
+  mockRateLimitError,
+  mockUnauthorizedError,
+} from "./test-utils"
+
+it("should handle agent not found", async () => {
+  const mockClient = createMockClient(async () => {
+    throw mockAgentNotFound("invalid_agent")
+  })
+
+  const agent = new Agent({
+    client: mockClient,
+    id: "invalid_agent",
+    // ...
+  })
+
+  await expect(agent.chat({ message: "Hello" })).rejects.toThrow(
+    "Agent invalid_agent not found",
+  )
+})
+
+it("should handle rate limiting", async () => {
+  const mockClient = createMockClient(async () => {
+    throw mockRateLimitError()
+  })
+
+  // Test rate limit handling...
+})
+```
+
+These mocks include the proper error shape with `code`, `status`, and `message` fields that match the Notion SDK's actual error format.
+
 ### Mock streaming responses
 
 Test streaming functionality with mock fetch responses:
 
 ```typescript
-import { mockStreamResponse } from "./test-utils"
+import { mockStreamResponse, mockHTTPErrorResponse } from "./test-utils"
 import { vi } from "vitest"
 
+// Mock successful stream
 const chunks = [
   '{"type":"started","thread_id":"thread_123","agent_id":"agent_123"}\n',
   '{"type":"message","role":"user","content":"Hello"}\n',
@@ -74,6 +114,22 @@ const chunks = [
 ]
 
 global.fetch = vi.fn().mockResolvedValue(mockStreamResponse(chunks))
+
+// Mock HTTP-level errors (404, 401, etc.)
+global.fetch = vi.fn().mockResolvedValue(
+  mockHTTPErrorResponse(404, "Not Found", {
+    code: "object_not_found",
+    message: "Agent not found",
+  }),
+)
+
+// Mock stream-level errors (errors in the stream chunks)
+const errorChunks = [
+  '{"type":"started","thread_id":"thread_123","agent_id":"agent_123"}\n',
+  '{"type":"error","code":"rate_limited","message":"Too many requests"}\n',
+]
+
+global.fetch = vi.fn().mockResolvedValue(mockStreamResponse(errorChunks))
 ```
 
 ## Example test
@@ -164,17 +220,23 @@ describe("Polling tests", () => {
 
 ## Architecture
 
-The testing setup consists of:
+The testing setup consists of just 3 files in `src/test-utils/`:
 
-1. **MockNotionClient**: A lightweight mock that implements the Notion client interface
-2. **Factory functions**: Pre-built mock data generators for all response types
-3. **Stream utilities**: Helpers for mocking streaming responses
-4. **Timer mocking**: Vitest fake timers for testing polling and delays
+1. **`MockNotionClient.ts`**: Core mocking mechanism
+   - Mock client that implements the Notion client interface
+   - Stream response helpers for testing `chatStream()`
+2. **`factories.ts`**: All factory functions in one place
+   - Response data factories (`mockAgentListResponse`, `mockThreadData`, etc.)
+   - Error factories (`mockAgentNotFound`, `mockRateLimitError`, etc.)
+3. **`index.ts`**: Clean re-exports of everything
+
+Plus **Vitest fake timers** for testing polling and delays.
 
 This approach allows you to:
 
 - Test SDK logic without making real API calls
 - Easily customize responses for different test scenarios
+- Mock realistic Notion API errors with proper error shapes
 - Verify request parameters are correctly formatted
 - Test error handling and edge cases
 - Test time-dependent operations without actual delays

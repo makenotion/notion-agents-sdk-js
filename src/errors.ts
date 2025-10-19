@@ -9,6 +9,17 @@ export class NotionAgentsError extends Error {
   }
 }
 
+export class AgentNotFoundError extends NotionAgentsError {
+  public readonly agentId: string
+
+  constructor(agentId: string) {
+    super(`Agent ${agentId} not found`, "agent_not_found")
+    this.name = "AgentNotFoundError"
+    this.agentId = agentId
+    Object.setPrototypeOf(this, AgentNotFoundError.prototype)
+  }
+}
+
 export class ThreadNotFoundError extends NotionAgentsError {
   public readonly threadId: string
 

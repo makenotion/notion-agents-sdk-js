@@ -6,6 +6,8 @@ import {
   mockThreadListResponse,
   mockThreadListItem,
   mockStreamResponse,
+  mockHTTPErrorResponse,
+  mockAgentNotFound,
 } from "./test-utils/index.js"
 import { StreamChunk } from "./types.js"
 
@@ -47,6 +49,23 @@ describe("Agent", () => {
       const result = await agent.chat({ message: "Hello" })
 
       expect(result).toEqual(mockResponse)
+    })
+
+    it("should throw AgentNotFoundError when agent doesn't exist", async () => {
+      const mockClient = createMockClient(async () => {
+        throw mockAgentNotFound("invalid_agent")
+      })
+
+      const agent = new Agent({
+        client: mockClient,
+        id: "invalid_agent",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      await expect(agent.chat({ message: "Hello" })).rejects.toThrow(
+        "Agent invalid_agent not found",
+      )
     })
 
     it("should continue an existing chat with threadId", async () => {
@@ -184,6 +203,23 @@ describe("Agent", () => {
 
       expect(result.results[0].id).toBe("thread_specific")
     })
+
+    it("should throw AgentNotFoundError when agent doesn't exist", async () => {
+      const mockClient = createMockClient(async () => {
+        throw mockAgentNotFound("invalid_agent")
+      })
+
+      const agent = new Agent({
+        client: mockClient,
+        id: "invalid_agent",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      await expect(agent.listThreads()).rejects.toThrow(
+        "Agent invalid_agent not found",
+      )
+    })
   })
 
   describe("getThread", () => {
@@ -300,6 +336,58 @@ describe("Agent", () => {
           chunk
         }
       }).rejects.toThrow("Something went wrong")
+    })
+
+    it("should handle HTTP 404 errors", async () => {
+      mockFetch.mockResolvedValue(
+        mockHTTPErrorResponse(404, "Not Found", {
+          code: "object_not_found",
+          message: "Agent not found",
+        }),
+      )
+
+      const mockClient = createMockClient(vi.fn())
+
+      const agent = new Agent({
+        client: mockClient,
+        id: "invalid_agent",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      await expect(async () => {
+        const generator = agent.chatStream({ message: "Hello" })
+        for await (const chunk of generator) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          chunk
+        }
+      }).rejects.toThrow("HTTP 404: Not Found")
+    })
+
+    it("should handle HTTP 401 unauthorized errors", async () => {
+      mockFetch.mockResolvedValue(
+        mockHTTPErrorResponse(401, "Unauthorized", {
+          code: "unauthorized",
+          message: "Invalid token",
+        }),
+      )
+
+      const mockClient = createMockClient(vi.fn())
+
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "bad_token",
+      })
+
+      await expect(async () => {
+        const generator = agent.chatStream({ message: "Hello" })
+        for await (const chunk of generator) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          chunk
+        }
+      }).rejects.toThrow("HTTP 401: Unauthorized")
     })
   })
 })
