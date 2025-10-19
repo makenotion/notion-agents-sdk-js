@@ -144,6 +144,11 @@ const threadsResponse = await agent.listThreads({
 
 console.log(`Found ${threadsResponse.results.length} threads`)
 
+// Get a specific thread by ID (useful for polling)
+const specificThread = await agent.listThreads({
+  id: "thread_123",
+})
+
 // Filter by status
 const completedThreads = await agent.listThreads({
   status: "completed",
@@ -204,10 +209,14 @@ The `Thread` class provides a clean API for managing chat threads:
 // Create a thread reference
 const thread = agent.thread(threadId)
 
-// Get the current thread state
-const threadData = await thread.get()
-console.log(threadData.status) // "pending" | "completed" | "failed"
-console.log(threadData.messages)
+// Get the current thread metadata (status, title, etc.)
+const threadInfo = await thread.get()
+console.log(threadInfo.status) // "pending" | "completed" | "failed"
+console.log(threadInfo.title)
+
+// Get messages separately
+const messages = await thread.listMessages({ page_size: 20 })
+console.log(messages.results)
 
 // Poll until the thread completes
 const result = await thread.poll({
@@ -216,7 +225,7 @@ const result = await thread.poll({
   maxDelayMs: 10000,
   initialDelayMs: 1000,
   onPending: (thread, attempt) => {
-    console.log(`Waiting... (attempt ${attempt})`)
+    console.log(`Waiting... status: ${thread.status} (attempt ${attempt})`)
   },
   onThreadNotFound: (attempt) => {
     console.log(`Thread not found yet (attempt ${attempt})`)
@@ -229,8 +238,9 @@ const result = await thread.poll({
 The `Agent` class also provides convenience methods for thread operations:
 
 ```typescript
-// Get thread directly
-const threadData = await agent.getThread(threadId)
+// Get thread metadata directly
+const threadInfo = await agent.getThread(threadId)
+console.log(threadInfo.status, threadInfo.title)
 
 // Poll thread directly
 const result = await agent.pollThread(threadId, {
@@ -342,13 +352,13 @@ Returns: `Thread`
 
 ##### getThread(threadId)
 
-Convenience method to get thread state.
+Convenience method to get thread metadata.
 
 ```typescript
 await agent.getThread(threadId: string);
 ```
 
-Returns: `Promise<ThreadData>`
+Returns: `Promise<ThreadListItem>`
 
 ##### pollThread(threadId, options?)
 
@@ -358,7 +368,7 @@ Convenience method to poll thread until completion.
 await agent.pollThread(threadId: string, options?: PollThreadOptions);
 ```
 
-Returns: `Promise<ThreadData>`
+Returns: `Promise<ThreadListItem>`
 
 ##### listThreads(params?)
 
@@ -366,6 +376,7 @@ Lists threads for the agent with pagination and filtering.
 
 ```typescript
 await agent.listThreads({
+  id?: string,
   title?: string,
   status?: "pending" | "completed" | "failed",
   created_by_type?: "user" | "bot",
@@ -390,13 +401,13 @@ Represents a chat thread.
 
 ##### get()
 
-Retrieves the current thread state.
+Retrieves the current thread metadata (status, title, created_by).
 
 ```typescript
 await thread.get()
 ```
 
-Returns: `Promise<ThreadData>`
+Returns: `Promise<ThreadListItem>`
 
 ##### poll(options?)
 
@@ -406,7 +417,7 @@ Polls the thread until completion with exponential backoff.
 await thread.poll(options?: PollThreadOptions);
 ```
 
-Returns: `Promise<ThreadData>`
+Returns: `Promise<ThreadListItem>`
 
 ##### listMessages(params?)
 
@@ -430,6 +441,52 @@ Returns: `Promise<ThreadMessageListResponse>`
 - `initialDelayMs` (default: 1000): Initial delay before first attempt
 - `onPending`: Callback when thread is pending
 - `onThreadNotFound`: Callback when thread is not found
+
+## Error handling
+
+The SDK provides specific error classes for different failure scenarios:
+
+```typescript
+import {
+  NotionAgentsError,
+  ThreadNotFoundError,
+  PollingTimeoutError,
+  StreamError,
+} from "@notionhq/agents-client"
+
+try {
+  const thread = await agent.getThread("invalid_id")
+} catch (error) {
+  if (error instanceof ThreadNotFoundError) {
+    console.error(`Thread ${error.threadId} not found`)
+  } else if (error instanceof PollingTimeoutError) {
+    console.error(`Polling timed out after ${error.attempts} attempts`)
+  } else if (error instanceof StreamError) {
+    console.error(`Stream error [${error.code}]: ${error.message}`)
+  } else if (error instanceof NotionAgentsError) {
+    console.error(`Agents error [${error.code}]: ${error.message}`)
+  } else {
+    throw error
+  }
+}
+```
+
+### Error classes
+
+All SDK errors extend `NotionAgentsError`, which provides:
+
+- `message`: Human-readable error message
+- `code`: Machine-readable error code
+- `name`: Error class name
+
+**Specific errors:**
+
+- **`ThreadNotFoundError`**: Thread doesn't exist or isn't accessible
+  - Additional property: `threadId`
+- **`PollingTimeoutError`**: Thread polling exceeded max attempts
+  - Additional property: `attempts`
+- **`StreamError`**: Error occurred during streaming
+  - Includes API error codes like `rate_limited`, `unauthorized`, etc.
 
 ## Environment setup
 
@@ -476,7 +533,11 @@ npm run build
 ### Type checking
 
 ```bash
+# Typecheck source code
 npm run typecheck
+
+# Typecheck examples
+npm run typecheck:examples
 ```
 
 ## Prerequisites

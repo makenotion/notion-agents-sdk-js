@@ -162,6 +162,60 @@ describe("Agent", () => {
         created_by_id: "bot_123",
       })
     })
+
+    it("should filter threads by id", async () => {
+      const mockResponse = mockThreadListResponse({
+        results: [mockThreadListItem({ id: "thread_specific" })],
+      })
+
+      const mockClient = createMockClient(async ({ query }) => {
+        expect(query).toEqual({ id: "thread_specific" })
+        return mockResponse
+      })
+
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      const result = await agent.listThreads({ id: "thread_specific" })
+
+      expect(result.results[0].id).toBe("thread_specific")
+    })
+  })
+
+  describe("getThread", () => {
+    it("should get thread", async () => {
+      const mockResponse = mockThreadListResponse({
+        results: [
+          mockThreadListItem({
+            id: "thread_456",
+            status: "pending",
+            title: "Test Thread",
+          }),
+        ],
+      })
+
+      const mockClient = createMockClient(async ({ path, query }) => {
+        expect(path).toBe("agents/agent_123/threads")
+        expect(query).toEqual({ id: "thread_456" })
+        return mockResponse
+      })
+
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      const result = await agent.getThread("thread_456")
+
+      expect(result.status).toBe("pending")
+      expect(result.title).toBe("Test Thread")
+    })
   })
 
   describe("chatStream", () => {
@@ -245,7 +299,7 @@ describe("Agent", () => {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           chunk
         }
-      }).rejects.toThrow("[internal_server_error] Something went wrong")
+      }).rejects.toThrow("Something went wrong")
     })
   })
 })

@@ -48,15 +48,19 @@ async function main() {
 
     threadId = invocation.thread_id
 
-    const result = await agent.pollThread(threadId, {
+    await agent.pollThread(threadId, {
       onPending: () => {
         process.stdout.write(".")
       },
     })
 
-    const agentMessage = result.messages.find((m) => m.role === "agent")
-    if (agentMessage) {
-      console.log(`Agent: ${agentMessage.content}\n`)
+    const thread = agent.thread(threadId)
+    const messagesResponse = await thread.listMessages({ role: "agent" })
+
+    if (messagesResponse.results.length > 0) {
+      const agentMessage =
+        messagesResponse.results[messagesResponse.results.length - 1]
+      console.log(`\nAgent: ${agentMessage.content}\n`)
     }
   }
 

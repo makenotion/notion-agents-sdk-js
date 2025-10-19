@@ -64,7 +64,7 @@ export type PollThreadOptions = {
   baseDelayMs?: number
   maxDelayMs?: number
   initialDelayMs?: number
-  onPending?: (thread: ThreadData, attempt: number) => void
+  onPending?: (thread: ThreadListItem, attempt: number) => void
   onThreadNotFound?: (attempt: number) => void
 }
 
@@ -102,6 +102,7 @@ export type ThreadListResponse = PaginatedResponse<ThreadListItem> & {
 }
 
 export type ThreadListParams = PaginationParams & {
+  id?: string
   title?: string
   status?: ThreadStatus
   created_by_type?: "user" | "bot"

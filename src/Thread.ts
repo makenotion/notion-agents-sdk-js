@@ -4,7 +4,10 @@ import type {
   PollThreadOptions,
   ThreadMessageListParams,
   ThreadMessageListResponse,
+  ThreadListResponse,
+  ThreadListItem,
 } from "./types.js"
+import { ThreadNotFoundError, PollingTimeoutError } from "./errors.js"
 
 export class Thread {
   public readonly threadId: string
@@ -17,13 +20,18 @@ export class Thread {
     this.agentId = args.agentId
   }
 
-  async get(): Promise<ThreadData> {
-    const response = await this.client.request<ThreadData>({
-      path: `threads/${this.threadId}`,
+  async get(): Promise<ThreadListItem> {
+    const response = await this.client.request<ThreadListResponse>({
+      path: `agents/${this.agentId}/threads`,
       method: "get",
+      query: { id: this.threadId },
     })
 
-    return response
+    if (response.results.length === 0) {
+      throw new ThreadNotFoundError(this.threadId)
+    }
+
+    return response.results[0]
   }
 
   async listMessages(
@@ -37,11 +45,11 @@ export class Thread {
     return this.client.request<ThreadMessageListResponse>({
       path: `threads/${this.threadId}/messages`,
       method: "get",
-      ...(Object.keys(query).length > 0 ? { query } : {}),
+      query,
     })
   }
 
-  async poll(options: PollThreadOptions = {}): Promise<ThreadData> {
+  async poll(options: PollThreadOptions = {}): Promise<ThreadListItem> {
     const {
       maxAttempts = 60,
       baseDelayMs = 1000,
@@ -73,6 +81,11 @@ export class Thread {
             error.code === "object_not_found")
         ) {
           onThreadNotFound?.(attempt)
+        } else if (
+          error instanceof Error &&
+          error.message.includes("not found")
+        ) {
+          onThreadNotFound?.(attempt)
         } else {
           throw error
         }
@@ -85,6 +98,6 @@ export class Thread {
       await new Promise((resolve) => setTimeout(resolve, delay))
     }
 
-    throw new Error(`Thread polling timed out after ${maxAttempts} attempts`)
+    throw new PollingTimeoutError(maxAttempts)
   }
 }

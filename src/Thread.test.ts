@@ -2,22 +2,29 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { Thread } from "./Thread.js"
 import {
   createMockClient,
-  mockThreadData,
+  mockThreadListResponse,
+  mockThreadListItem,
   mockThreadMessageListResponse,
   mockThreadMessageItem,
 } from "./test-utils/index.js"
 
 describe("Thread", () => {
   describe("get", () => {
-    it("should get thread data", async () => {
-      const mockResponse = mockThreadData({
-        thread_id: "thread_456",
-        status: "completed",
+    it("should get thread using listThreads with id filter", async () => {
+      const mockResponse = mockThreadListResponse({
+        results: [
+          mockThreadListItem({
+            id: "thread_456",
+            status: "completed",
+            title: "My Thread",
+          }),
+        ],
       })
 
-      const mockClient = createMockClient(async ({ path, method }) => {
-        expect(path).toBe("threads/thread_456")
+      const mockClient = createMockClient(async ({ path, method, query }) => {
+        expect(path).toBe("agents/agent_123/threads")
         expect(method).toBe("get")
+        expect(query).toEqual({ id: "thread_456" })
         return mockResponse
       })
 
@@ -29,8 +36,25 @@ describe("Thread", () => {
 
       const result = await thread.get()
 
-      expect(result).toEqual(mockResponse)
+      expect(result).toEqual(mockResponse.results[0])
       expect(result.status).toBe("completed")
+      expect(result.title).toBe("My Thread")
+    })
+
+    it("should throw error if thread not found", async () => {
+      const mockResponse = mockThreadListResponse({
+        results: [],
+      })
+
+      const mockClient = createMockClient(async () => mockResponse)
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      await expect(thread.get()).rejects.toThrow("Thread thread_456 not found")
     })
   })
 
@@ -112,10 +136,16 @@ describe("Thread", () => {
 
     it("should poll until thread completes", async () => {
       let callCount = 0
+
       const mockClient = createMockClient(async () => {
         callCount++
-        return mockThreadData({
-          status: callCount < 3 ? "pending" : "completed",
+        return mockThreadListResponse({
+          results: [
+            mockThreadListItem({
+              id: "thread_456",
+              status: callCount < 3 ? "pending" : "completed",
+            }),
+          ],
         })
       })
 
@@ -144,7 +174,9 @@ describe("Thread", () => {
 
     it("should throw error when max attempts reached", async () => {
       const mockClient = createMockClient(async () => {
-        return mockThreadData({ status: "pending" })
+        return mockThreadListResponse({
+          results: [mockThreadListItem({ status: "pending" })],
+        })
       })
 
       const thread = new Thread({
@@ -176,7 +208,9 @@ describe("Thread", () => {
           Object.assign(error, { code: "object_not_found" })
           throw error
         }
-        return mockThreadData({ status: "completed" })
+        return mockThreadListResponse({
+          results: [mockThreadListItem({ status: "completed" })],
+        })
       })
 
       const thread = new Thread({

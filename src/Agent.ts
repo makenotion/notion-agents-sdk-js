@@ -2,18 +2,19 @@ import { Client } from "@notionhq/client"
 import { Thread } from "./Thread.js"
 import type {
   ChatInvocationResponse,
-  ThreadData,
   PollThreadOptions,
   StreamChunk,
   ThreadInfo,
   ThreadListParams,
   ThreadListResponse,
+  ThreadListItem,
 } from "./types.js"
+import { StreamError } from "./errors.js"
 
 export class Agent {
   public readonly id: string
-  public readonly name: string
-  public readonly instruction: string | null
+  public readonly name?: string
+  public readonly instruction?: string | null
   private readonly client: Client
   private readonly baseUrl: string
   private readonly auth: string
@@ -22,8 +23,8 @@ export class Agent {
   constructor(args: {
     client: Client
     id: string
-    name: string
-    instruction: string | null
+    name?: string
+    instruction?: string | null
     baseUrl: string
     auth: string
     notionVersion?: string
@@ -59,7 +60,7 @@ export class Agent {
     })
   }
 
-  async getThread(threadId: string): Promise<ThreadData> {
+  async getThread(threadId: string): Promise<ThreadListItem> {
     const thread = this.thread(threadId)
     return thread.get()
   }
@@ -67,13 +68,14 @@ export class Agent {
   async pollThread(
     threadId: string,
     options?: PollThreadOptions,
-  ): Promise<ThreadData> {
+  ): Promise<ThreadListItem> {
     const thread = this.thread(threadId)
     return thread.poll(options)
   }
 
   async listThreads(params?: ThreadListParams): Promise<ThreadListResponse> {
     const query: Record<string, string | number> = {}
+    if (params?.id) query.id = params.id
     if (params?.title) query.title = params.title
     if (params?.status) query.status = params.status
     if (params?.created_by_type) query.created_by_type = params.created_by_type
@@ -84,7 +86,7 @@ export class Agent {
     return this.client.request<ThreadListResponse>({
       path: `agents/${this.id}/threads`,
       method: "get",
-      ...(Object.keys(query).length > 0 ? { query } : {}),
+      query,
     })
   }
 
@@ -149,7 +151,7 @@ export class Agent {
             messagesByRole.set(chunk.role, chunk.content)
             args.onMessage?.({ role: chunk.role, content: chunk.content })
           } else if (chunk.type === "error") {
-            throw new Error(`[${chunk.code}] ${chunk.message}`)
+            throw new StreamError(chunk.message, chunk.code)
           }
         }
       }

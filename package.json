@@ -18,6 +18,7 @@
     "test:coverage": "vitest run --coverage",
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
+    "typecheck:examples": "tsc --noEmit --project tsconfig.examples.json",
     "build": "tsc",
     "format": "prettier --write src/**/*.ts"
   },

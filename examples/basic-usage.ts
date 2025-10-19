@@ -38,7 +38,7 @@ async function main() {
 
   console.log("\nPolling for response...")
   const thread = agent.thread(invocation.thread_id)
-  const result = await thread.poll({
+  const threadInfo = await thread.poll({
     onPending: (thread, attempt) => {
       console.log(
         `Waiting... (attempt ${attempt + 1}, status: ${thread.status})`,
@@ -46,8 +46,13 @@ async function main() {
     },
   })
 
+  console.log(`\nThread completed with status: ${threadInfo.status}`)
+
+  console.log("\nFetching conversation messages...")
+  const messagesResponse = await thread.listMessages()
+
   console.log("\nConversation:")
-  for (const message of result.messages) {
+  for (const message of messagesResponse.results) {
     console.log(`${message.role}: ${message.content}`)
   }
 }

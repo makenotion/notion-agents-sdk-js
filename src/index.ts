@@ -2,6 +2,12 @@ export { NotionAgentsClient } from "./NotionAgentsClient.js"
 export { Agent } from "./Agent.js"
 export { Thread } from "./Thread.js"
 export { AgentOperations } from "./AgentOperations.js"
+export {
+  NotionAgentsError,
+  ThreadNotFoundError,
+  PollingTimeoutError,
+  StreamError,
+} from "./errors.js"
 export type {
   ThreadStatus,
   AgentData,

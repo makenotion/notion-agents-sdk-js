@@ -29,7 +29,7 @@ export class AgentOperations {
     const response = await this.client.request<AgentListResponse>({
       path: "agents",
       method: "get",
-      ...(Object.keys(query).length > 0 ? { query } : {}),
+      query,
     })
 
     return response
@@ -39,8 +39,6 @@ export class AgentOperations {
     return new Agent({
       client: this.client,
       id: agentId,
-      name: "",
-      instruction: null,
       auth: this.auth,
       baseUrl: this.baseUrl,
       notionVersion: this.notionVersion,
