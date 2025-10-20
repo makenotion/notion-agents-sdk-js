@@ -8,6 +8,10 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const CONFIG_PATH = join(__dirname, "..", "config.json")
 
+/**
+ * Loads the saved configuration from config.json.
+ * Returns null if the file doesn't exist or cannot be parsed.
+ */
 export function loadConfig(): Config | null {
   if (!existsSync(CONFIG_PATH)) {
     return null
@@ -19,10 +23,18 @@ export function loadConfig(): Config | null {
   }
 }
 
+/**
+ * Saves the configuration to config.json for future sessions.
+ */
 export function saveConfig(config: Config): void {
   writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2))
 }
 
+/**
+ * Attempts to load default values from the repository root's .env file.
+ * This provides a convenient way to pre-populate the setup wizard with
+ * values from an existing development environment configuration.
+ */
 export function loadEnvDefaults(): { apiToken?: string; baseUrl?: string } {
   const rootEnvPath = join(__dirname, "..", "..", "..", ".env")
   if (!existsSync(rootEnvPath)) {

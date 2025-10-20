@@ -9,6 +9,7 @@ export {
   PollingTimeoutError,
   StreamError,
 } from "./errors.js"
+export { stripLangTags } from "./utils.js"
 export type {
   ThreadStatus,
   AgentData,

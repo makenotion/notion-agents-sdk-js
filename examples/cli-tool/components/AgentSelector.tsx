@@ -2,6 +2,11 @@ import React from "react"
 import { Box, Text, useInput } from "ink"
 import type { AgentData } from "@notionhq/agents-client"
 
+/**
+ * Interactive agent selector component with arrow key navigation.
+ * Displays a list of agents and allows the user to select one using
+ * up/down arrow keys.
+ */
 export function AgentSelector({
   agents,
   selectedIndex,

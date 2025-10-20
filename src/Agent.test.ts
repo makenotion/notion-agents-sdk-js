@@ -10,6 +10,7 @@ import {
   mockAgentNotFound,
 } from "./test-utils/index.js"
 import { StreamChunk } from "./types.js"
+import { StreamError } from "./errors.js"
 
 describe("Agent", () => {
   let mockFetch: ReturnType<typeof vi.fn>
@@ -328,14 +329,17 @@ describe("Agent", () => {
         auth: "test_token",
       })
 
-      const generator = agent.chatStream({ message: "Hello" })
-
-      await expect(async () => {
-        for await (const chunk of generator) {
+      try {
+        for await (const chunk of agent.chatStream({ message: "Hello" })) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           chunk
         }
-      }).rejects.toThrow("Something went wrong")
+        throw new Error("Should have thrown")
+      } catch (error) {
+        expect(error).toBeInstanceOf(StreamError)
+        expect((error as StreamError).code).toBe("internal_server_error")
+        expect((error as StreamError).message).toBe("Something went wrong")
+      }
     })
 
     it("should handle HTTP 404 errors", async () => {
@@ -355,13 +359,18 @@ describe("Agent", () => {
         auth: "test_token",
       })
 
-      await expect(async () => {
+      try {
         const generator = agent.chatStream({ message: "Hello" })
         for await (const chunk of generator) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           chunk
         }
-      }).rejects.toThrow("HTTP 404: Not Found")
+        throw new Error("Should have thrown")
+      } catch (error) {
+        expect(error).toBeInstanceOf(StreamError)
+        expect((error as StreamError).code).toBe("http_error")
+        expect((error as StreamError).message).toBe("HTTP 404: Not Found")
+      }
     })
 
     it("should handle HTTP 401 unauthorized errors", async () => {
@@ -381,13 +390,82 @@ describe("Agent", () => {
         auth: "bad_token",
       })
 
-      await expect(async () => {
+      try {
         const generator = agent.chatStream({ message: "Hello" })
         for await (const chunk of generator) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           chunk
         }
-      }).rejects.toThrow("HTTP 401: Unauthorized")
+        throw new Error("Should have thrown")
+      } catch (error) {
+        expect(error).toBeInstanceOf(StreamError)
+        expect((error as StreamError).code).toBe("http_error")
+        expect((error as StreamError).message).toBe("HTTP 401: Unauthorized")
+      }
+    })
+
+    it("should throw StreamError when response body is missing", async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        body: null,
+        status: 200,
+        statusText: "OK",
+      })
+
+      const mockClient = createMockClient(vi.fn())
+
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      try {
+        const generator = agent.chatStream({ message: "Hello" })
+        for await (const chunk of generator) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          chunk
+        }
+        throw new Error("Should have thrown")
+      } catch (error) {
+        expect(error).toBeInstanceOf(StreamError)
+        expect((error as StreamError).code).toBe("missing_response_body")
+        expect((error as StreamError).message).toBe("No response body")
+      }
+    })
+
+    it("should throw StreamError when stream doesn't provide thread_id", async () => {
+      const chunks = [
+        '{"type":"message","role":"user","content":"Hello"}\n',
+        '{"type":"done","thread_id":"thread_123"}\n',
+      ]
+
+      mockFetch.mockResolvedValue(mockStreamResponse(chunks))
+
+      const mockClient = createMockClient(vi.fn())
+
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      try {
+        const generator = agent.chatStream({ message: "Hello" })
+        for await (const chunk of generator) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          chunk
+        }
+        throw new Error("Should have thrown")
+      } catch (error) {
+        expect(error).toBeInstanceOf(StreamError)
+        expect((error as StreamError).code).toBe("invalid_stream_response")
+        expect((error as StreamError).message).toBe(
+          "Stream did not provide required thread_id or agent_id",
+        )
+      }
     })
   })
 })

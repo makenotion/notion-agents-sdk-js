@@ -7,6 +7,12 @@ import { saveConfig, loadEnvDefaults } from "../utils/config.js"
 
 type SetupStep = "token" | "url" | "verifying" | "confirm"
 
+/**
+ * First-run setup wizard that collects and verifies Notion API credentials.
+ * Walks the user through entering their API token and base URL, validates
+ * the credentials by calling the Notion API, and displays workspace info
+ * before saving the configuration.
+ */
 export function SetupScreen({
   onComplete,
 }: {

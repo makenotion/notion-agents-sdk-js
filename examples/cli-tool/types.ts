@@ -1,3 +1,7 @@
+/**
+ * Shared type definitions for the CLI tool.
+ */
+
 export type Config = {
   apiToken: string
   baseUrl?: string

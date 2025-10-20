@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useCallback } from "react"
 import { Box, Text, useInput, useApp } from "ink"
 import TextInput from "ink-text-input"
-import { NotionAgentsClient } from "@notionhq/agents-client"
+import { NotionAgentsClient, stripLangTags } from "@notionhq/agents-client"
 import { Client } from "@notionhq/client"
 import type { AgentData } from "@notionhq/agents-client"
 import type { Config, Message, AppMode, WorkspaceInfo } from "../types.js"
 import { saveConfig } from "../utils/config.js"
 import { AgentSelector } from "./AgentSelector.js"
 
-function stripLangTags(text: string): string {
-  return text.replace(/<\/?lang[^>]*>/g, "")
-}
-
+/**
+ * Main chat interface component that provides a ChatGPT-like experience
+ * for conversing with Notion agents. Handles agent selection, message
+ * streaming, conversation persistence, and workspace display.
+ */
 export function ChatApp({
   config,
   onReconfigure,

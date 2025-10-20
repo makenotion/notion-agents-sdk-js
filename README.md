@@ -117,6 +117,8 @@ await agent.chat({
 #### Streaming mode
 
 ```typescript
+import { StreamError, stripLangTags } from "@notionhq/agents-client"
+
 // Stream responses in real-time
 for await (const chunk of agent.chatStream({ message: "Hello!" })) {
   if (chunk.type === "message" && chunk.role === "agent") {
@@ -131,6 +133,27 @@ const threadInfo = await agent.chatStream({
     console.log(`${message.role}: ${message.content}`)
   },
 })
+
+// Clean up lang tags for display (optional)
+for await (const chunk of agent.chatStream({ message: "Hello!" })) {
+  if (chunk.type === "message" && chunk.role === "agent") {
+    const cleanContent = stripLangTags(chunk.content)
+    process.stdout.write(cleanContent)
+  }
+}
+
+// With error handling
+try {
+  for await (const chunk of agent.chatStream({ message: "Hello!" })) {
+    if (chunk.type === "message" && chunk.role === "agent") {
+      process.stdout.write(chunk.content)
+    }
+  }
+} catch (error) {
+  if (error instanceof StreamError) {
+    console.error(`Stream error [${error.code}]: ${error.message}`)
+  }
+}
 ```
 
 ### Listing threads
@@ -442,6 +465,20 @@ Returns: `Promise<ThreadMessageListResponse>`
 - `onPending`: Callback when thread is pending
 - `onThreadNotFound`: Callback when thread is not found
 
+### Utilities
+
+#### `stripLangTags`
+
+Removes `<lang>` XML tags from text. Useful for cleaning up agent responses for display in terminals, UIs, or other contexts where language metadata tags aren't needed.
+
+```typescript
+import { stripLangTags } from "@notionhq/agents-client"
+
+const raw = '<lang primary="en-US"/>Hello world'
+const clean = stripLangTags(raw)
+// Returns: "Hello world"
+```
+
 ## Error handling
 
 The SDK provides specific error classes for different failure scenarios:
@@ -492,7 +529,11 @@ All SDK errors extend `NotionAgentsError`, which provides:
 - **`PollingTimeoutError`**: Thread polling exceeded max attempts
   - Additional property: `attempts`
 - **`StreamError`**: Error occurred during streaming
-  - Includes API error codes like `rate_limited`, `unauthorized`, etc.
+  - Common error codes:
+    - `http_error`: HTTP request failed (non-200 status)
+    - `missing_response_body`: Server response missing body
+    - `invalid_stream_response`: Malformed stream data
+    - `internal_server_error`, `rate_limited`, `unauthorized`, etc.: API-level errors
 
 ## Environment setup
 

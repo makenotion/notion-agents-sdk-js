@@ -6,6 +6,10 @@ import { loadConfig } from "./utils/config.js"
 import { SetupScreen } from "./components/SetupScreen.js"
 import { ChatApp } from "./components/ChatApp.js"
 
+/**
+ * Root component that manages the configuration state and routes between
+ * the setup wizard and main chat interface.
+ */
 function App() {
   const [config, setConfig] = useState<Config | null>(loadConfig())
 
