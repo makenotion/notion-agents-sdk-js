@@ -135,11 +135,14 @@ export class Agent {
     )
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      throw new StreamError(
+        `HTTP ${response.status}: ${response.statusText}`,
+        "http_error",
+      )
     }
 
     if (!response.body) {
-      throw new Error("No response body")
+      throw new StreamError("No response body", "missing_response_body")
     }
 
     let threadId: string | undefined
@@ -164,7 +167,7 @@ export class Agent {
             continue
           }
 
-          const chunk = JSON.parse(line) as StreamChunk
+          const chunk: StreamChunk = JSON.parse(line)
           yield chunk
 
           if (chunk.type === "started") {
@@ -183,20 +186,25 @@ export class Agent {
     }
 
     if (!threadId || !agentId) {
-      throw new Error("Stream did not provide thread_id")
+      throw new StreamError(
+        "Stream did not provide required thread_id or agent_id",
+        "invalid_stream_response",
+      )
     }
 
     const messages: Array<{ role: "user" | "agent"; content: string }> = []
     if (messagesByRole.has("user")) {
       messages.push({
         role: "user",
-        content: messagesByRole.get("user") as string,
+        // SAFETY: We checked the map key exists in the `if` statement above.
+        content: messagesByRole.get("user")!,
       })
     }
     if (messagesByRole.has("agent")) {
       messages.push({
         role: "agent",
-        content: messagesByRole.get("agent") as string,
+        // SAFETY: We checked the map key exists in the `if` statement above.
+        content: messagesByRole.get("agent")!,
       })
     }
 
