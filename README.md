@@ -128,33 +128,18 @@ const salesAgents = await client.agents.list({
   page_size: 5,
 })
 
-// Paginate through all agents using helper
+// Iterate through all agents
 import { iterateAgents } from "@notionhq/agents-client"
 
 for await (const agentData of iterateAgents(client)) {
   console.log(agentData.name)
 }
 
-// Or collect all agents into an array
+// Or collect all into an array
 import { collectAgents } from "@notionhq/agents-client"
 
 const allAgents = await collectAgents(client)
 console.log(`Total agents: ${allAgents.length}`)
-
-// Manual pagination (if you need more control)
-let cursor = undefined
-do {
-  const response = await client.agents.list({
-    page_size: 10,
-    start_cursor: cursor,
-  })
-
-  for (const agentData of response.results) {
-    console.log(agentData.name)
-  }
-
-  cursor = response.next_cursor
-} while (cursor)
 ```
 
 ### Chatting with agents
@@ -182,34 +167,12 @@ await agent.chat({
 ```typescript
 import { StreamError, stripLangTags } from "@notionhq/agents-client"
 
-// Stream responses in real-time
-for await (const chunk of agent.chatStream({ message: "Hello!" })) {
-  if (chunk.type === "message" && chunk.role === "agent") {
-    process.stdout.write(chunk.content)
-  }
-}
-
-// With message callback
-const threadInfo = await agent.chatStream({
-  message: "Hello!",
-  onMessage: (message) => {
-    console.log(`${message.role}: ${message.content}`)
-  },
-})
-
-// Clean up lang tags for display (optional)
-for await (const chunk of agent.chatStream({ message: "Hello!" })) {
-  if (chunk.type === "message" && chunk.role === "agent") {
-    const cleanContent = stripLangTags(chunk.content)
-    process.stdout.write(cleanContent)
-  }
-}
-
-// With error handling
 try {
   for await (const chunk of agent.chatStream({ message: "Hello!" })) {
     if (chunk.type === "message" && chunk.role === "agent") {
-      process.stdout.write(chunk.content)
+      // Strip lang tags for cleaner display
+      const cleanContent = stripLangTags(chunk.content)
+      process.stdout.write(cleanContent)
     }
   }
 } catch (error) {
@@ -217,6 +180,22 @@ try {
     console.error(`Stream error [${error.code}]: ${error.message}`)
   }
 }
+
+// Use the onMessage callback and get conversation summary afterward
+const threadInfo = await agent.chatStream({
+  message: "Hello!",
+  onMessage: (message) => {
+    if (message.role === "agent") {
+      const cleanContent = stripLangTags(message.content)
+      process.stdout.write(cleanContent)
+    }
+  },
+})
+
+// After streaming completes, threadInfo contains:
+console.log(`Thread ID: ${threadInfo.thread_id}`)
+console.log(`Agent ID: ${threadInfo.agent_id}`)
+console.log(`Full conversation:`, threadInfo.messages)
 ```
 
 ### Listing threads
@@ -271,33 +250,18 @@ const agentMessages = await thread.listMessages({
   page_size: 10,
 })
 
-// Paginate through messages using helper
+// Iterate through all messages
 import { iterateMessages } from "@notionhq/agents-client"
 
 for await (const message of iterateMessages(thread)) {
   console.log(`${message.role}: ${message.content}`)
 }
 
-// Or collect all messages into an array
+// Or collect all into an array
 import { collectMessages } from "@notionhq/agents-client"
 
 const allMessages = await collectMessages(thread)
 console.log(`Total messages: ${allMessages.length}`)
-
-// Manual pagination (if you need more control)
-let cursor = undefined
-do {
-  const response = await thread.listMessages({
-    page_size: 20,
-    start_cursor: cursor,
-  })
-
-  for (const message of response.results) {
-    console.log(`${message.role}: ${message.content}`)
-  }
-
-  cursor = response.next_cursor
-} while (cursor)
 ```
 
 ### Working with threads
