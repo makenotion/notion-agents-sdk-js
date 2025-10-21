@@ -6,23 +6,23 @@ This directory contains example scripts demonstrating how to use the Notion Agen
 
 1. Create a `.env` file in the root directory:
 
-```bash
-NOTION_API_TOKEN=your_token_here
-# Optional: override the base URL for testing against different environments
-# NOTION_BASE_URL=http://localhost:3000
-```
+   ```bash
+   NOTION_API_TOKEN=your_token_here
+   # Optional: override the base URL for testing against different environments
+   # NOTION_BASE_URL=http://localhost:3000
+   ```
 
-2. Install dependencies:
+1. Install dependencies:
 
-```bash
-npm install
-```
+   ```bash
+   npm install
+   ```
 
-3. Run any example:
+1. Run any example:
 
-```bash
-npx tsx examples/basic-usage.ts
-```
+   ```bash
+   npx tsx examples/basic-usage.ts
+   ```
 
 ## Available examples
 

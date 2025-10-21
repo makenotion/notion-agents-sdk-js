@@ -20,7 +20,8 @@
     "typecheck": "tsc --noEmit",
     "typecheck:examples": "tsc --noEmit --project tsconfig.examples.json",
     "build": "tsc",
-    "format": "prettier --write src/**/*.ts"
+    "format": "prettier --write src/**/*.ts",
+    "lint:md": "markdownlint-cli2 '**/*.md' '#node_modules' '#dist' '#examples/cli-tool/node_modules'"
   },
   "keywords": [],
   "author": "Notion Labs, Inc.",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@types/node": "24.7.2",
     "@vitest/coverage-v8": "^2.1.8",
+    "markdownlint-cli2": "^0.18.1",
     "prettier": "3.6.2",
     "tsx": "^4.20.6",
     "typescript": "5.9.3",

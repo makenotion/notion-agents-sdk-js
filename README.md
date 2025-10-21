@@ -368,13 +368,13 @@ Returns: `Agent`
 
 Represents a custom agent.
 
-#### Properties
+#### Agent properties
 
 - `id`: Agent ID
 - `name`: Agent name
 - `instruction`: Agent instructions (nullable)
 
-#### Methods
+#### Agent methods
 
 ##### chat(args)
 
@@ -455,12 +455,12 @@ Returns: `Promise<ThreadListResponse>`
 
 Represents a chat thread.
 
-#### Properties
+#### Thread properties
 
 - `threadId`: Thread ID
 - `agentId`: Associated agent ID
 
-#### Methods
+#### Thread methods
 
 ##### get()
 
@@ -505,11 +505,9 @@ Returns: `Promise<ThreadMessageListResponse>`
 - `onPending`: Callback when thread is pending
 - `onThreadNotFound`: Callback when thread is not found
 
-### Utilities
+## Utilities
 
-### Helper functions
-
-#### `stripLangTags`
+### `stripLangTags`
 
 Removes `<lang>` XML tags from text. Useful for cleaning up agent responses for display in terminals, UIs, or other contexts where language metadata tags aren't needed.
 
@@ -521,7 +519,7 @@ const clean = stripLangTags(raw)
 // Returns: "Hello world"
 ```
 
-#### `isPersonalAgent`
+### `isPersonalAgent`
 
 Checks if an agent ID represents the Personal Agent (Notion AI).
 
@@ -536,11 +534,7 @@ if (isPersonalAgent(firstAgent.id)) {
 }
 ```
 
-### Pagination helpers
-
-The SDK provides convenient helpers for iterating through paginated results without manually managing cursors:
-
-#### `iterateAgents` / `collectAgents`
+### `iterateAgents` / `collectAgents`
 
 ```typescript
 import { iterateAgents, collectAgents } from "@notionhq/agents-client"
@@ -554,7 +548,7 @@ for await (const agent of iterateAgents(client)) {
 const allAgents = await collectAgents(client, { name: "Sales" })
 ```
 
-#### `iterateThreads` / `collectThreads`
+### `iterateThreads` / `collectThreads`
 
 ```typescript
 import { iterateThreads, collectThreads } from "@notionhq/agents-client"
@@ -570,7 +564,7 @@ for await (const thread of iterateThreads(agent, { status: "completed" })) {
 const allThreads = await collectThreads(agent)
 ```
 
-#### `iterateMessages` / `collectMessages`
+### `iterateMessages` / `collectMessages`
 
 ```typescript
 import { iterateMessages, collectMessages } from "@notionhq/agents-client"
@@ -586,7 +580,7 @@ for await (const message of iterateMessages(thread, { role: "agent" })) {
 const allMessages = await collectMessages(thread)
 ```
 
-These helpers automatically handle pagination, making it easier to work with large result sets without managing `next_cursor` manually.
+**Note:** All pagination helpers automatically handle cursor management, making it easier to work with large result sets.
 
 ## Error handling
 
@@ -713,6 +707,6 @@ npm run typecheck:examples
 
 ### Public integration
 
-1. Create a public integration at https://www.notion.so/my-integrations
+1. Create a public integration at <https://www.notion.so/my-integrations>
 2. Complete OAuth authorization flow
 3. Use the access token

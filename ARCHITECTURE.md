@@ -6,7 +6,7 @@ This document explains the design decisions and architecture of the Notion Agent
 
 The SDK is organized into clean, focused classes:
 
-```
+```text
 NotionAgentsClient (extends Notion Client)
   └── agents: AgentOperations
         └── list() → Agent[]
@@ -28,19 +28,22 @@ Thread
 Instead of having thread operations scattered across the Agent class, we introduced a dedicated `Thread` class. This provides several benefits:
 
 **Before (monolithic approach):**
+
 ```typescript
-const thread = await agent.getThread(threadId);
-const result = await agent.pollThread(threadId, options);
+const thread = await agent.getThread(threadId)
+const result = await agent.pollThread(threadId, options)
 ```
 
 **After (with Thread class):**
+
 ```typescript
-const thread = agent.thread(threadId);
-const state = await thread.get();
-const result = await thread.poll(options);
+const thread = agent.thread(threadId)
+const state = await thread.get()
+const result = await thread.poll(options)
 ```
 
 **Benefits:**
+
 - **Encapsulation**: Thread operations are grouped together
 - **Reusability**: Create a thread reference once, use it multiple times
 - **Clarity**: Clear separation between agent and thread responsibilities
@@ -51,8 +54,8 @@ const result = await thread.poll(options);
 We kept the convenience methods on `Agent` for backwards compatibility and simple use cases:
 
 ```typescript
-agent.getThread(threadId);     // Shorthand for agent.thread(threadId).get()
-agent.pollThread(threadId);    // Shorthand for agent.thread(threadId).poll()
+agent.getThread(threadId) // Shorthand for agent.thread(threadId).get()
+agent.pollThread(threadId) // Shorthand for agent.thread(threadId).poll()
 ```
 
 This gives users flexibility to choose their preferred style.
@@ -66,18 +69,19 @@ The `NotionAgentsClient` extends the official Notion `Client` class rather than 
 - Users get both agent operations and standard Notion APIs in one client
 
 ```typescript
-const client = new NotionAgentsClient({ auth: token });
+const client = new NotionAgentsClient({ auth: token })
 
 // Agent operations
-const agents = await client.agents.list();
+const agents = await client.agents.list()
 
 // Standard Notion operations
-const pages = await client.pages.retrieve({ page_id: "..." });
+const pages = await client.pages.retrieve({ page_id: "..." })
 ```
 
 ### 4. Type safety
 
 All public APIs are fully typed:
+
 - Request parameters
 - Response types
 - Stream chunks
@@ -96,13 +100,14 @@ for await (const chunk of agent.chatStream({ message: "..." })) {
 ```
 
 This provides:
+
 - Backpressure handling
 - Clean syntax
 - Easy error handling with try/catch
 
 ## File organization
 
-```
+```text
 src/
 ├── types.ts                 # Type definitions
 ├── Thread.ts                # Thread class
@@ -117,6 +122,7 @@ Each class is in its own file, making the codebase easy to navigate and maintain
 ## Dependencies
 
 The SDK has minimal dependencies:
+
 - `@notionhq/client`: Official Notion SDK (required)
 - `dotenv`: Environment variable loading (dev only)
 
@@ -125,6 +131,7 @@ All runtime dependencies are peer dependencies, keeping the bundle small.
 ## Error handling
 
 Errors follow the Notion API error format:
+
 - HTTP errors are preserved with status codes
 - Stream errors include error codes matching the REST API
 - Polling timeouts throw descriptive error messages
@@ -132,6 +139,7 @@ Errors follow the Notion API error format:
 ## Testing strategy
 
 The SDK is designed to be testable:
+
 - Dependency injection via constructor
 - Pure functions where possible
 - Minimal side effects
@@ -140,6 +148,7 @@ The SDK is designed to be testable:
 ## Future extensions
 
 The architecture makes it easy to add:
+
 - Thread message appending
 - Thread deletion
 - Agent creation/updating
@@ -147,4 +156,3 @@ The architecture makes it easy to add:
 - Additional polling strategies
 
 Each would be added to the appropriate class without affecting others.
-

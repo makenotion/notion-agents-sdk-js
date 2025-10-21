@@ -116,7 +116,7 @@ Verify that:
 
 - Your API token is valid
 - Your integration has the required permissions
-- The base URL is correct (default: https://api.notion.com)
+- The base URL is correct (default: <https://api.notion.com>)
 
 ### Reset configuration
 

@@ -23,4 +23,5 @@ jobs:
       - run: npm run build
       - run: npm run typecheck
       - run: npm run typecheck:examples
+      - run: npm run lint:md
       - run: npm test
