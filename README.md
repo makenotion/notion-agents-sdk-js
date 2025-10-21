@@ -2,6 +2,15 @@
 
 A TypeScript SDK for interacting with Notion Custom Agents via the public API.
 
+> [!IMPORTANT]
+> **Confidentiality**
+>
+> These materials are Notion Confidential Information. Use is limited to internal evaluation and development under your agreement with Notion. No redistribution or public disclosure without Notion’s prior written consent.
+>
+> **Beta Services**
+>
+> This Notion Agents SDK is a Beta Service, as defined in your agreement with Notion, provided “AS IS." Notion makes no representations or warranties of any kind as to the Beta Services, whether express, implied, statutory, or otherwise regarding Beta Services, including any warranty that the Beta Services will become > generally available. At its sole discretion, Notion may suspend or terminate your access to the Beta Services at any time. See the “Beta Services” section of your agreement with Notion for the governing terms.
+
 ## Features
 
 - Clean, type-safe wrapper around the official Notion SDK
@@ -57,6 +66,42 @@ const client = new NotionAgentsClient({
 })
 ```
 
+### Personal agent
+
+The SDK provides easy access to the Personal Agent (Notion AI) using the reserved identifier `"personal"`.
+
+```typescript
+// Access the personal agent directly
+const personalAgent = client.agents.personal()
+
+// Or use the agent() method with "personal" ID
+const personalAgent = client.agents.agent("personal")
+
+// Chat with Notion AI
+const invocation = await personalAgent.chat({
+  message: "What's in my workspace?",
+})
+
+// Stream responses from Notion AI
+for await (const chunk of personalAgent.chatStream({
+  message: "Summarize my recent notes",
+})) {
+  if (chunk.type === "message" && chunk.role === "agent") {
+    process.stdout.write(chunk.content)
+  }
+}
+
+// List threads with the personal agent
+const threads = await personalAgent.listThreads()
+```
+
+The personal agent:
+
+- Always appears first in the results from `client.agents.list()`
+- Uses the reserved ID `"personal"` instead of a UUID
+- Has full workspace search capabilities
+- Works with all agent methods (chat, chatStream, listThreads, etc.)
+
 ### Listing agents
 
 ```typescript
@@ -69,6 +114,11 @@ const agentsResponse = await client.agents.list({
 console.log(`Found ${agentsResponse.results.length} agents`)
 console.log(`Has more: ${agentsResponse.has_more}`)
 
+// The first result is always the personal agent (Notion AI) on the first page
+if (agentsResponse.results[0]?.id === "personal") {
+  console.log("First agent is the personal agent (Notion AI)")
+}
+
 // Get an agent instance by ID
 const agent = client.agents.agent(agentsResponse.results[0].id)
 
@@ -78,7 +128,20 @@ const salesAgents = await client.agents.list({
   page_size: 5,
 })
 
-// Paginate through all agents
+// Paginate through all agents using helper
+import { iterateAgents } from "@notionhq/agents-client"
+
+for await (const agentData of iterateAgents(client)) {
+  console.log(agentData.name)
+}
+
+// Or collect all agents into an array
+import { collectAgents } from "@notionhq/agents-client"
+
+const allAgents = await collectAgents(client)
+console.log(`Total agents: ${allAgents.length}`)
+
+// Manual pagination (if you need more control)
 let cursor = undefined
 do {
   const response = await client.agents.list({
@@ -208,7 +271,20 @@ const agentMessages = await thread.listMessages({
   page_size: 10,
 })
 
-// Paginate through messages
+// Paginate through messages using helper
+import { iterateMessages } from "@notionhq/agents-client"
+
+for await (const message of iterateMessages(thread)) {
+  console.log(`${message.role}: ${message.content}`)
+}
+
+// Or collect all messages into an array
+import { collectMessages } from "@notionhq/agents-client"
+
+const allMessages = await collectMessages(thread)
+console.log(`Total messages: ${allMessages.length}`)
+
+// Manual pagination (if you need more control)
 let cursor = undefined
 do {
   const response = await thread.listMessages({
@@ -467,6 +543,8 @@ Returns: `Promise<ThreadMessageListResponse>`
 
 ### Utilities
 
+### Helper functions
+
 #### `stripLangTags`
 
 Removes `<lang>` XML tags from text. Useful for cleaning up agent responses for display in terminals, UIs, or other contexts where language metadata tags aren't needed.
@@ -478,6 +556,73 @@ const raw = '<lang primary="en-US"/>Hello world'
 const clean = stripLangTags(raw)
 // Returns: "Hello world"
 ```
+
+#### `isPersonalAgent`
+
+Checks if an agent ID represents the Personal Agent (Notion AI).
+
+```typescript
+import { isPersonalAgent } from "@notionhq/agents-client"
+
+const agentsResponse = await client.agents.list()
+const firstAgent = agentsResponse.results[0]
+
+if (isPersonalAgent(firstAgent.id)) {
+  console.log("This is the Notion AI assistant")
+}
+```
+
+### Pagination helpers
+
+The SDK provides convenient helpers for iterating through paginated results without manually managing cursors:
+
+#### `iterateAgents` / `collectAgents`
+
+```typescript
+import { iterateAgents, collectAgents } from "@notionhq/agents-client"
+
+// Iterate through all agents
+for await (const agent of iterateAgents(client)) {
+  console.log(agent.name)
+}
+
+// Collect all agents into an array
+const allAgents = await collectAgents(client, { name: "Sales" })
+```
+
+#### `iterateThreads` / `collectThreads`
+
+```typescript
+import { iterateThreads, collectThreads } from "@notionhq/agents-client"
+
+const agent = client.agents.agent(agentId)
+
+// Iterate through all threads
+for await (const thread of iterateThreads(agent, { status: "completed" })) {
+  console.log(thread.title)
+}
+
+// Collect all threads into an array
+const allThreads = await collectThreads(agent)
+```
+
+#### `iterateMessages` / `collectMessages`
+
+```typescript
+import { iterateMessages, collectMessages } from "@notionhq/agents-client"
+
+const thread = agent.thread(threadId)
+
+// Iterate through all messages
+for await (const message of iterateMessages(thread, { role: "agent" })) {
+  console.log(message.content)
+}
+
+// Collect all messages into an array
+const allMessages = await collectMessages(thread)
+```
+
+These helpers automatically handle pagination, making it easier to work with large result sets without managing `next_cursor` manually.
 
 ## Error handling
 

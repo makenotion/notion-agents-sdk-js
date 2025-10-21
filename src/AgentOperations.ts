@@ -1,6 +1,7 @@
 import { Client } from "@notionhq/client"
 import { Agent } from "./Agent.js"
 import type { AgentListResponse, AgentListParams } from "./types.js"
+import { PERSONAL_AGENT_ID } from "./types.js"
 
 export class AgentOperations {
   private readonly client: Client
@@ -43,5 +44,9 @@ export class AgentOperations {
       baseUrl: this.baseUrl,
       notionVersion: this.notionVersion,
     })
+  }
+
+  personal(): Agent {
+    return this.agent(PERSONAL_AGENT_ID)
   }
 }

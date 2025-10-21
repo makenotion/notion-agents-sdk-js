@@ -102,5 +102,35 @@ describe("AgentOperations", () => {
 
       expect(agent.id).toBe("agent_123")
     })
+
+    it("should create personal agent instance", () => {
+      const mockClient = createMockClient(vi.fn())
+
+      const operations = new AgentOperations({
+        client: mockClient,
+        auth: "test_token",
+        baseUrl: "https://api.notion.com",
+      })
+
+      const agent = operations.agent("personal")
+
+      expect(agent.id).toBe("personal")
+    })
+  })
+
+  describe("personal", () => {
+    it("should create personal agent instance", () => {
+      const mockClient = createMockClient(vi.fn())
+
+      const operations = new AgentOperations({
+        client: mockClient,
+        auth: "test_token",
+        baseUrl: "https://api.notion.com",
+      })
+
+      const agent = operations.personal()
+
+      expect(agent.id).toBe("personal")
+    })
   })
 })

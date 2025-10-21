@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react"
 import { Box, Text, useInput, useApp } from "ink"
 import TextInput from "ink-text-input"
-import { NotionAgentsClient, stripLangTags } from "@notionhq/agents-client"
+import {
+  NotionAgentsClient,
+  stripLangTags,
+  isPersonalAgent,
+} from "@notionhq/agents-client"
 import { Client } from "@notionhq/client"
 import type { AgentData } from "@notionhq/agents-client"
 import type { Config, Message, AppMode, WorkspaceInfo } from "../types.js"
@@ -342,9 +346,17 @@ export function ChatApp({
         borderStyle="single"
         borderColor="cyan"
       >
-        <Text bold color="cyan">
-          {currentAgent?.name || "Agent"}
-        </Text>
+        <Box>
+          <Text bold color="cyan">
+            {currentAgent?.name || "Agent"}
+          </Text>
+          {currentAgent && isPersonalAgent(currentAgent.id) && (
+            <Text color="blue" dimColor>
+              {" "}
+              (Notion AI)
+            </Text>
+          )}
+        </Box>
         {currentAgent?.instruction && (
           <Text dimColor>{currentAgent.instruction}</Text>
         )}

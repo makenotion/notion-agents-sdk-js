@@ -9,7 +9,15 @@ export {
   PollingTimeoutError,
   StreamError,
 } from "./errors.js"
-export { stripLangTags } from "./utils.js"
+export { stripLangTags, isPersonalAgent } from "./utils.js"
+export {
+  iterateAgents,
+  collectAgents,
+  iterateThreads,
+  collectThreads,
+  iterateMessages,
+  collectMessages,
+} from "./pagination.js"
 export type {
   ThreadStatus,
   AgentData,
@@ -30,4 +38,6 @@ export type {
   ThreadMessageListResponse,
   ThreadMessageListParams,
   AgentListParams,
+  PersonalAgentId,
 } from "./types.js"
+export { PERSONAL_AGENT_ID } from "./types.js"
