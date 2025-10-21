@@ -1,3 +1,5 @@
+import { PERSONAL_AGENT_ID } from "./types.js"
+
 /**
  * Removes `<lang>` XML tags from agent response text.
  *
@@ -21,4 +23,29 @@
  */
 export function stripLangTags(text: string): string {
   return text.replace(/<\/?lang[^>]*>/g, "")
+}
+
+/**
+ * Checks if an agent ID represents the Personal Agent (Notion AI).
+ *
+ * The personal agent uses the reserved identifier "personal" instead of a UUID.
+ *
+ * @param agentId - The agent ID to check
+ * @returns `true` if the agent ID is the personal agent, `false` otherwise
+ *
+ * @example
+ * ```typescript
+ * const agent = client.agents.personal()
+ * console.log(isPersonalAgent(agent.id)) // true
+ *
+ * const customAgent = client.agents.agent("some-uuid")
+ * console.log(isPersonalAgent(customAgent.id)) // false
+ *
+ * if (isPersonalAgent(agentData.id)) {
+ *   console.log("This is the Notion AI assistant")
+ * }
+ * ```
+ */
+export function isPersonalAgent(agentId: string): boolean {
+  return agentId === PERSONAL_AGENT_ID
 }

@@ -1,5 +1,8 @@
 export type ThreadStatus = "pending" | "completed" | "failed"
 
+export const PERSONAL_AGENT_ID = "personal" as const
+export type PersonalAgentId = typeof PERSONAL_AGENT_ID
+
 export type AgentData = {
   object: "agent"
   id: string

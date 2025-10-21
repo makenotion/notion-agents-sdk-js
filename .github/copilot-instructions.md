@@ -10,7 +10,7 @@ This is a TypeScript SDK for Notion Custom Agents. It wraps the official `@notio
 
 ### Class hierarchy
 
-```
+```text
 NotionAgentsClient (extends Client)
   └── agents: AgentOperations
         └── list() → Agent[]

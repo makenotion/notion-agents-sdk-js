@@ -2,6 +2,15 @@
 
 A TypeScript SDK for interacting with Notion Custom Agents via the public API.
 
+> [!IMPORTANT]
+> **Confidentiality**
+>
+> These materials are Notion Confidential Information. Use is limited to internal evaluation and development under your agreement with Notion. No redistribution or public disclosure without Notion’s prior written consent.
+>
+> **Beta Services**
+>
+> This Notion Agents SDK is a Beta Service, as defined in your agreement with Notion, provided “AS IS." Notion makes no representations or warranties of any kind as to the Beta Services, whether express, implied, statutory, or otherwise regarding Beta Services, including any warranty that the Beta Services will become > generally available. At its sole discretion, Notion may suspend or terminate your access to the Beta Services at any time. See the “Beta Services” section of your agreement with Notion for the governing terms.
+
 ## Features
 
 - Clean, type-safe wrapper around the official Notion SDK
@@ -57,6 +66,42 @@ const client = new NotionAgentsClient({
 })
 ```
 
+### Personal agent
+
+The SDK provides easy access to the Personal Agent (Notion AI) using the reserved identifier `"personal"`.
+
+```typescript
+// Access the personal agent directly
+const personalAgent = client.agents.personal()
+
+// Or use the agent() method with "personal" ID
+const personalAgent = client.agents.agent("personal")
+
+// Chat with Notion AI
+const invocation = await personalAgent.chat({
+  message: "What's in my workspace?",
+})
+
+// Stream responses from Notion AI
+for await (const chunk of personalAgent.chatStream({
+  message: "Summarize my recent notes",
+})) {
+  if (chunk.type === "message" && chunk.role === "agent") {
+    process.stdout.write(chunk.content)
+  }
+}
+
+// List threads with the personal agent
+const threads = await personalAgent.listThreads()
+```
+
+The personal agent:
+
+- Always appears first in the results from `client.agents.list()`
+- Uses the reserved ID `"personal"` instead of a UUID
+- Has full workspace search capabilities
+- Works with all agent methods (chat, chatStream, listThreads, etc.)
+
 ### Listing agents
 
 ```typescript
@@ -69,6 +114,11 @@ const agentsResponse = await client.agents.list({
 console.log(`Found ${agentsResponse.results.length} agents`)
 console.log(`Has more: ${agentsResponse.has_more}`)
 
+// The first result is always the personal agent (Notion AI) on the first page
+if (agentsResponse.results[0]?.id === "personal") {
+  console.log("First agent is the personal agent (Notion AI)")
+}
+
 // Get an agent instance by ID
 const agent = client.agents.agent(agentsResponse.results[0].id)
 
@@ -78,20 +128,18 @@ const salesAgents = await client.agents.list({
   page_size: 5,
 })
 
-// Paginate through all agents
-let cursor = undefined
-do {
-  const response = await client.agents.list({
-    page_size: 10,
-    start_cursor: cursor,
-  })
+// Iterate through all agents
+import { iterateAgents } from "@notionhq/agents-client"
 
-  for (const agentData of response.results) {
-    console.log(agentData.name)
-  }
+for await (const agentData of iterateAgents(client)) {
+  console.log(agentData.name)
+}
 
-  cursor = response.next_cursor
-} while (cursor)
+// Or collect all into an array
+import { collectAgents } from "@notionhq/agents-client"
+
+const allAgents = await collectAgents(client)
+console.log(`Total agents: ${allAgents.length}`)
 ```
 
 ### Chatting with agents
@@ -119,34 +167,12 @@ await agent.chat({
 ```typescript
 import { StreamError, stripLangTags } from "@notionhq/agents-client"
 
-// Stream responses in real-time
-for await (const chunk of agent.chatStream({ message: "Hello!" })) {
-  if (chunk.type === "message" && chunk.role === "agent") {
-    process.stdout.write(chunk.content)
-  }
-}
-
-// With message callback
-const threadInfo = await agent.chatStream({
-  message: "Hello!",
-  onMessage: (message) => {
-    console.log(`${message.role}: ${message.content}`)
-  },
-})
-
-// Clean up lang tags for display (optional)
-for await (const chunk of agent.chatStream({ message: "Hello!" })) {
-  if (chunk.type === "message" && chunk.role === "agent") {
-    const cleanContent = stripLangTags(chunk.content)
-    process.stdout.write(cleanContent)
-  }
-}
-
-// With error handling
 try {
   for await (const chunk of agent.chatStream({ message: "Hello!" })) {
     if (chunk.type === "message" && chunk.role === "agent") {
-      process.stdout.write(chunk.content)
+      // Strip lang tags for cleaner display
+      const cleanContent = stripLangTags(chunk.content)
+      process.stdout.write(cleanContent)
     }
   }
 } catch (error) {
@@ -154,6 +180,22 @@ try {
     console.error(`Stream error [${error.code}]: ${error.message}`)
   }
 }
+
+// Use the onMessage callback and get conversation summary afterward
+const threadInfo = await agent.chatStream({
+  message: "Hello!",
+  onMessage: (message) => {
+    if (message.role === "agent") {
+      const cleanContent = stripLangTags(message.content)
+      process.stdout.write(cleanContent)
+    }
+  },
+})
+
+// After streaming completes, threadInfo contains:
+console.log(`Thread ID: ${threadInfo.thread_id}`)
+console.log(`Agent ID: ${threadInfo.agent_id}`)
+console.log(`Full conversation:`, threadInfo.messages)
 ```
 
 ### Listing threads
@@ -208,20 +250,18 @@ const agentMessages = await thread.listMessages({
   page_size: 10,
 })
 
-// Paginate through messages
-let cursor = undefined
-do {
-  const response = await thread.listMessages({
-    page_size: 20,
-    start_cursor: cursor,
-  })
+// Iterate through all messages
+import { iterateMessages } from "@notionhq/agents-client"
 
-  for (const message of response.results) {
-    console.log(`${message.role}: ${message.content}`)
-  }
+for await (const message of iterateMessages(thread)) {
+  console.log(`${message.role}: ${message.content}`)
+}
 
-  cursor = response.next_cursor
-} while (cursor)
+// Or collect all into an array
+import { collectMessages } from "@notionhq/agents-client"
+
+const allMessages = await collectMessages(thread)
+console.log(`Total messages: ${allMessages.length}`)
 ```
 
 ### Working with threads
@@ -328,13 +368,13 @@ Returns: `Agent`
 
 Represents a custom agent.
 
-#### Properties
+#### Agent properties
 
 - `id`: Agent ID
 - `name`: Agent name
 - `instruction`: Agent instructions (nullable)
 
-#### Methods
+#### Agent methods
 
 ##### chat(args)
 
@@ -415,12 +455,12 @@ Returns: `Promise<ThreadListResponse>`
 
 Represents a chat thread.
 
-#### Properties
+#### Thread properties
 
 - `threadId`: Thread ID
 - `agentId`: Associated agent ID
 
-#### Methods
+#### Thread methods
 
 ##### get()
 
@@ -465,9 +505,9 @@ Returns: `Promise<ThreadMessageListResponse>`
 - `onPending`: Callback when thread is pending
 - `onThreadNotFound`: Callback when thread is not found
 
-### Utilities
+## Utilities
 
-#### `stripLangTags`
+### `stripLangTags`
 
 Removes `<lang>` XML tags from text. Useful for cleaning up agent responses for display in terminals, UIs, or other contexts where language metadata tags aren't needed.
 
@@ -478,6 +518,69 @@ const raw = '<lang primary="en-US"/>Hello world'
 const clean = stripLangTags(raw)
 // Returns: "Hello world"
 ```
+
+### `isPersonalAgent`
+
+Checks if an agent ID represents the Personal Agent (Notion AI).
+
+```typescript
+import { isPersonalAgent } from "@notionhq/agents-client"
+
+const agentsResponse = await client.agents.list()
+const firstAgent = agentsResponse.results[0]
+
+if (isPersonalAgent(firstAgent.id)) {
+  console.log("This is the Notion AI assistant")
+}
+```
+
+### `iterateAgents` / `collectAgents`
+
+```typescript
+import { iterateAgents, collectAgents } from "@notionhq/agents-client"
+
+// Iterate through all agents
+for await (const agent of iterateAgents(client)) {
+  console.log(agent.name)
+}
+
+// Collect all agents into an array
+const allAgents = await collectAgents(client, { name: "Sales" })
+```
+
+### `iterateThreads` / `collectThreads`
+
+```typescript
+import { iterateThreads, collectThreads } from "@notionhq/agents-client"
+
+const agent = client.agents.agent(agentId)
+
+// Iterate through all threads
+for await (const thread of iterateThreads(agent, { status: "completed" })) {
+  console.log(thread.title)
+}
+
+// Collect all threads into an array
+const allThreads = await collectThreads(agent)
+```
+
+### `iterateMessages` / `collectMessages`
+
+```typescript
+import { iterateMessages, collectMessages } from "@notionhq/agents-client"
+
+const thread = agent.thread(threadId)
+
+// Iterate through all messages
+for await (const message of iterateMessages(thread, { role: "agent" })) {
+  console.log(message.content)
+}
+
+// Collect all messages into an array
+const allMessages = await collectMessages(thread)
+```
+
+**Note:** All pagination helpers automatically handle cursor management, making it easier to work with large result sets.
 
 ## Error handling
 
@@ -604,10 +707,6 @@ npm run typecheck:examples
 
 ### Public integration
 
-1. Create a public integration at https://www.notion.so/my-integrations
+1. Create a public integration at <https://www.notion.so/my-integrations>
 2. Complete OAuth authorization flow
 3. Use the access token
-
-## License
-
-MIT

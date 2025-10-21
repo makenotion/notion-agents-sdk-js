@@ -52,6 +52,34 @@ describe("Agent", () => {
       expect(result).toEqual(mockResponse)
     })
 
+    it("should work with personal agent", async () => {
+      const mockResponse = mockChatInvocation({
+        agent_id: "personal",
+        thread_id: "thread_789",
+      })
+
+      const mockClient = createMockClient(async ({ path, method, body }) => {
+        expect(path).toBe("agents/personal/chat")
+        expect(method).toBe("post")
+        expect(body).toEqual({ message: "Hello Notion AI" })
+        return mockResponse
+      })
+
+      const agent = new Agent({
+        client: mockClient,
+        id: "personal",
+        name: "Notion AI",
+        instruction: null,
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      const result = await agent.chat({ message: "Hello Notion AI" })
+
+      expect(result).toEqual(mockResponse)
+      expect(result.agent_id).toBe("personal")
+    })
+
     it("should throw AgentNotFoundError when agent doesn't exist", async () => {
       const mockClient = createMockClient(async () => {
         throw mockAgentNotFound("invalid_agent")
@@ -131,6 +159,32 @@ describe("Agent", () => {
       expect(result.results).toHaveLength(2)
       expect(result.has_more).toBe(true)
       expect(result.next_cursor).toBe("cursor_123")
+    })
+
+    it("should list threads for personal agent", async () => {
+      const mockResponse = mockThreadListResponse({
+        results: [mockThreadListItem({ id: "thread_personal", title: "Chat" })],
+      })
+
+      const mockClient = createMockClient(async ({ path, method }) => {
+        expect(path).toBe("agents/personal/threads")
+        expect(method).toBe("get")
+        return mockResponse
+      })
+
+      const agent = new Agent({
+        client: mockClient,
+        id: "personal",
+        name: "Notion AI",
+        instruction: null,
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      const result = await agent.listThreads()
+
+      expect(result.results).toHaveLength(1)
+      expect(result.results[0].id).toBe("thread_personal")
     })
 
     it("should filter threads by status", async () => {
@@ -301,6 +355,58 @@ describe("Agent", () => {
 
       expect(mockFetch).toHaveBeenCalledWith(
         "https://api.notion.com/v1/agents/agent_123/chatStream",
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({
+            Authorization: "Bearer test_token",
+          }),
+        }),
+      )
+    })
+
+    it("should stream chat responses for personal agent", async () => {
+      const chunks = [
+        '{"type":"started","thread_id":"thread_456","agent_id":"personal"}\n',
+        '{"type":"message","role":"user","content":"Hello Notion AI"}\n',
+        '{"type":"message","role":"agent","content":"Hello! How can I help?"}\n',
+        '{"type":"done","thread_id":"thread_456"}\n',
+      ]
+
+      mockFetch.mockResolvedValue(mockStreamResponse(chunks))
+
+      const mockClient = createMockClient(vi.fn())
+
+      const agent = new Agent({
+        client: mockClient,
+        id: "personal",
+        name: "Notion AI",
+        instruction: null,
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      const messages: Array<{ role: "user" | "agent"; content: string }> = []
+
+      const generator = agent.chatStream({
+        message: "Hello Notion AI",
+        onMessage: (msg) => messages.push(msg),
+      })
+
+      const receivedChunks: StreamChunk[] = []
+      for await (const chunk of generator) {
+        receivedChunks.push(chunk)
+      }
+
+      expect(receivedChunks).toHaveLength(4)
+      expect(receivedChunks[0]).toEqual({
+        type: "started",
+        thread_id: "thread_456",
+        agent_id: "personal",
+      })
+      expect(messages).toHaveLength(2)
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://api.notion.com/v1/agents/personal/chatStream",
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({

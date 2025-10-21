@@ -1,4 +1,12 @@
-import { NotionAgentsClient } from "../dist/index.js"
+import {
+  NotionAgentsClient,
+  iterateAgents,
+  collectAgents,
+  iterateThreads,
+  collectThreads,
+  iterateMessages,
+  collectMessages,
+} from "../dist/index.js"
 import * as dotenv from "dotenv"
 
 dotenv.config()
@@ -21,28 +29,17 @@ async function main() {
 
   console.log("=== Pagination Example ===\n")
 
-  console.log("Listing agents with pagination...")
-  let agentsCursor: string | null = null
-  let agentsPage = 1
+  console.log("Listing all agents using iterateAgents()...")
+  let count = 0
+  for await (const agent of iterateAgents(client)) {
+    console.log(`  - ${agent.name} (${agent.id})`)
+    count++
+  }
+  console.log(`Total: ${count} agents\n`)
 
-  do {
-    const response = await client.agents.list({
-      page_size: 5,
-      ...(agentsCursor ? { start_cursor: agentsCursor } : {}),
-    })
-
-    console.log(`\nPage ${agentsPage}:`)
-    response.results.forEach((agent) => {
-      console.log(`  - ${agent.name} (${agent.id})`)
-    })
-
-    console.log(
-      `  Has more: ${response.has_more}, Next cursor: ${response.next_cursor}`,
-    )
-
-    agentsCursor = response.next_cursor
-    agentsPage++
-  } while (agentsCursor)
+  console.log("Collecting all agents using collectAgents()...")
+  const allAgents = await collectAgents(client)
+  console.log(`Collected ${allAgents.length} agents in memory\n`)
 
   const firstAgent = await client.agents.list({ page_size: 1 })
   if (firstAgent.results.length === 0) {
@@ -54,33 +51,16 @@ async function main() {
   const agent = client.agents.agent(agentData.id)
 
   console.log(`\n\nListing threads for agent: ${agentData.name}`)
-  let threadsCursor: string | null = null
-  let threadsPage = 1
-
-  do {
-    const response = await agent.listThreads({
-      page_size: 10,
-      ...(threadsCursor ? { start_cursor: threadsCursor } : {}),
-    })
-
-    if (response.results.length > 0) {
-      console.log(`\nPage ${threadsPage}:`)
-      response.results.forEach((thread) => {
-        console.log(
-          `  - ${thread.title} (${thread.id}) - ${thread.status} - Created by: ${thread.created_by.type}`,
-        )
-      })
-
-      console.log(
-        `  Has more: ${response.has_more}, Next cursor: ${response.next_cursor}`,
-      )
-    } else {
-      console.log("  No threads found")
-    }
-
-    threadsCursor = response.next_cursor
-    threadsPage++
-  } while (threadsCursor)
+  let threadCount = 0
+  for await (const thread of iterateThreads(agent)) {
+    console.log(
+      `  - ${thread.title} (${thread.id}) - ${thread.status} - Created by: ${thread.created_by.type}`,
+    )
+    threadCount++
+  }
+  if (threadCount === 0) {
+    console.log("  No threads found")
+  }
 
   const threadsResponse = await agent.listThreads({ page_size: 1 })
   if (threadsResponse.results.length > 0) {
@@ -89,50 +69,27 @@ async function main() {
     console.log(
       `\n\nListing messages for thread: ${threadsResponse.results[0].title}`,
     )
-    let messagesCursor: string | null = null
-    let messagesPage = 1
-
-    do {
-      const response = await thread.listMessages({
-        page_size: 10,
-        ...(messagesCursor ? { start_cursor: messagesCursor } : {}),
-      })
-
-      if (response.results.length > 0) {
-        console.log(`\nPage ${messagesPage}:`)
-        response.results.forEach((message) => {
-          console.log(
-            `  - [${message.role}]: ${message.content.substring(0, 100)}...`,
-          )
-        })
-
+    const allMessages = await collectMessages(thread)
+    if (allMessages.length > 0) {
+      allMessages.forEach((message) => {
         console.log(
-          `  Has more: ${response.has_more}, Next cursor: ${response.next_cursor}`,
+          `  - [${message.role}]: ${message.content.substring(0, 100)}...`,
         )
-      } else {
-        console.log("  No messages found")
-      }
-
-      messagesCursor = response.next_cursor
-      messagesPage++
-    } while (messagesCursor)
+      })
+      console.log(`Total: ${allMessages.length} messages`)
+    } else {
+      console.log("  No messages found")
+    }
   }
 
   console.log("\n\n=== Filtering Example ===\n")
 
-  console.log("Listing only completed threads:")
-  const completedThreads = await agent.listThreads({
-    status: "completed",
-    page_size: 5,
+  console.log("Collecting completed threads:")
+  const completedThreads = await collectThreads(agent, { status: "completed" })
+  console.log(`Found ${completedThreads.length} completed threads`)
+  completedThreads.forEach((thread) => {
+    console.log(`  - ${thread.title} (${thread.status})`)
   })
-
-  if (completedThreads.results.length > 0) {
-    completedThreads.results.forEach((thread) => {
-      console.log(`  - ${thread.title} (${thread.status})`)
-    })
-  } else {
-    console.log("  No completed threads found")
-  }
 }
 
 main()

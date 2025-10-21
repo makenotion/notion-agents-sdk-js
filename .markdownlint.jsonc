@@ -1,0 +1,9 @@
+{
+  "default": true,
+  // MD013: Line length - Disabled because code examples often exceed line limits
+  "MD013": false,
+  // MD033: Inline HTML - Disabled to allow HTML in markdown when needed for formatting
+  "MD033": false,
+  // MD041: First line in file should be top-level heading - Disabled for flexibility
+  "MD041": false,
+}
