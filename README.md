@@ -752,7 +752,3 @@ npm run typecheck:examples
 1. Create a public integration at https://www.notion.so/my-integrations
 2. Complete OAuth authorization flow
 3. Use the access token
-
-## License
-
-MIT
