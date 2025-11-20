@@ -9,7 +9,7 @@ import {
   mockHTTPErrorResponse,
   mockAgentNotFound,
 } from "./test-utils/index.js"
-import { StreamChunk } from "./types.js"
+import { StreamChunk, PERSONAL_AGENT_ID } from "./types.js"
 import { StreamError } from "./errors.js"
 
 describe("Agent", () => {
@@ -54,12 +54,12 @@ describe("Agent", () => {
 
     it("should work with personal agent", async () => {
       const mockResponse = mockChatInvocation({
-        agent_id: "personal",
+        agent_id: PERSONAL_AGENT_ID,
         thread_id: "thread_789",
       })
 
       const mockClient = createMockClient(async ({ path, method, body }) => {
-        expect(path).toBe("agents/personal/chat")
+        expect(path).toBe(`agents/${PERSONAL_AGENT_ID}/chat`)
         expect(method).toBe("post")
         expect(body).toEqual({ message: "Hello Notion AI" })
         return mockResponse
@@ -67,7 +67,7 @@ describe("Agent", () => {
 
       const agent = new Agent({
         client: mockClient,
-        id: "personal",
+        id: PERSONAL_AGENT_ID,
         name: "Notion AI",
         instruction: null,
         baseUrl: "https://api.notion.com",
@@ -77,7 +77,7 @@ describe("Agent", () => {
       const result = await agent.chat({ message: "Hello Notion AI" })
 
       expect(result).toEqual(mockResponse)
-      expect(result.agent_id).toBe("personal")
+      expect(result.agent_id).toBe(PERSONAL_AGENT_ID)
     })
 
     it("should throw AgentNotFoundError when agent doesn't exist", async () => {
@@ -167,14 +167,14 @@ describe("Agent", () => {
       })
 
       const mockClient = createMockClient(async ({ path, method }) => {
-        expect(path).toBe("agents/personal/threads")
+        expect(path).toBe(`agents/${PERSONAL_AGENT_ID}/threads`)
         expect(method).toBe("get")
         return mockResponse
       })
 
       const agent = new Agent({
         client: mockClient,
-        id: "personal",
+        id: PERSONAL_AGENT_ID,
         name: "Notion AI",
         instruction: null,
         baseUrl: "https://api.notion.com",
@@ -366,7 +366,7 @@ describe("Agent", () => {
 
     it("should stream chat responses for personal agent", async () => {
       const chunks = [
-        '{"type":"started","thread_id":"thread_456","agent_id":"personal"}\n',
+        `{"type":"started","thread_id":"thread_456","agent_id":"${PERSONAL_AGENT_ID}"}\n`,
         '{"type":"message","role":"user","content":"Hello Notion AI"}\n',
         '{"type":"message","role":"agent","content":"Hello! How can I help?"}\n',
         '{"type":"done","thread_id":"thread_456"}\n',
@@ -378,7 +378,7 @@ describe("Agent", () => {
 
       const agent = new Agent({
         client: mockClient,
-        id: "personal",
+        id: PERSONAL_AGENT_ID,
         name: "Notion AI",
         instruction: null,
         baseUrl: "https://api.notion.com",
@@ -401,12 +401,12 @@ describe("Agent", () => {
       expect(receivedChunks[0]).toEqual({
         type: "started",
         thread_id: "thread_456",
-        agent_id: "personal",
+        agent_id: PERSONAL_AGENT_ID,
       })
       expect(messages).toHaveLength(2)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://api.notion.com/v1/agents/personal/chatStream",
+        `https://api.notion.com/v1/agents/${PERSONAL_AGENT_ID}/chatStream`,
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({

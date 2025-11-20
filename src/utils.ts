@@ -28,7 +28,7 @@ export function stripLangTags(text: string): string {
 /**
  * Checks if an agent ID represents the Personal Agent (Notion AI).
  *
- * The personal agent uses the reserved identifier "personal" instead of a UUID.
+ * The personal agent uses a reserved UUID identifier.
  *
  * @param agentId - The agent ID to check
  * @returns `true` if the agent ID is the personal agent, `false` otherwise

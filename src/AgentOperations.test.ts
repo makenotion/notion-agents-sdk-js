@@ -5,6 +5,7 @@ import {
   mockAgentListResponse,
   mockAgentData,
 } from "./test-utils/index.js"
+import { PERSONAL_AGENT_ID } from "./types.js"
 
 describe("AgentOperations", () => {
   describe("list", () => {
@@ -112,13 +113,13 @@ describe("AgentOperations", () => {
         baseUrl: "https://api.notion.com",
       })
 
-      const agent = operations.agent("personal")
+      const agent = operations.agent(PERSONAL_AGENT_ID)
 
-      expect(agent.id).toBe("personal")
+      expect(agent.id).toBe(PERSONAL_AGENT_ID)
     })
   })
 
-  describe("personal", () => {
+  describe("standard Notion AI agent", () => {
     it("should create personal agent instance", () => {
       const mockClient = createMockClient(vi.fn())
 
@@ -130,7 +131,7 @@ describe("AgentOperations", () => {
 
       const agent = operations.personal()
 
-      expect(agent.id).toBe("personal")
+      expect(agent.id).toBe(PERSONAL_AGENT_ID)
     })
   })
 })
