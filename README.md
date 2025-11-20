@@ -68,14 +68,16 @@ const client = new NotionAgentsClient({
 
 ### Personal agent
 
-The SDK provides easy access to the Personal Agent (Notion AI) using the reserved identifier `"personal"`.
+The SDK provides easy access to the Personal Agent (Notion AI) using the reserved UUID.
 
 ```typescript
+import { PERSONAL_AGENT_ID } from "@notionhq/agents-client"
+
 // Access the personal agent directly
 const personalAgent = client.agents.personal()
 
-// Or use the agent() method with "personal" ID
-const personalAgent = client.agents.agent("personal")
+// Or use the agent() method with the personal agent UUID
+const personalAgent = client.agents.agent(PERSONAL_AGENT_ID)
 
 // Chat with Notion AI
 const invocation = await personalAgent.chat({
@@ -98,7 +100,7 @@ const threads = await personalAgent.listThreads()
 The personal agent:
 
 - Always appears first in the results from `client.agents.list()`
-- Uses the reserved ID `"personal"` instead of a UUID
+- Uses a reserved UUID (available as `PERSONAL_AGENT_ID`)
 - Has full workspace search capabilities
 - Works with all agent methods (chat, chatStream, listThreads, etc.)
 
@@ -115,7 +117,9 @@ console.log(`Found ${agentsResponse.results.length} agents`)
 console.log(`Has more: ${agentsResponse.has_more}`)
 
 // The first result is always the personal agent (Notion AI) on the first page
-if (agentsResponse.results[0]?.id === "personal") {
+import { PERSONAL_AGENT_ID } from "@notionhq/agents-client"
+
+if (agentsResponse.results[0]?.id === PERSONAL_AGENT_ID) {
   console.log("First agent is the personal agent (Notion AI)")
 }
 
