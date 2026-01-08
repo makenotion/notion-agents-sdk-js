@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@types/node": "24.10.1",
-    "@vitest/coverage-v8": "^4.0.14",
+    "@vitest/coverage-v8": "^4.0.16",
     "markdownlint-cli2": "^0.20.0",
     "prettier": "3.7.4",
     "tsx": "^4.21.0",
