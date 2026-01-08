@@ -3,11 +3,18 @@ export type ThreadStatus = "pending" | "completed" | "failed"
 export const PERSONAL_AGENT_ID = "33333333-3333-3333-3333-333333333333" as const
 export type PersonalAgentId = typeof PERSONAL_AGENT_ID
 
+export type AgentVersion = {
+  id: string
+  number: number
+  published_at: string
+}
+
 export type AgentData = {
   object: "agent"
   id: string
   name: string
   instruction: string | null
+  version: AgentVersion | null
 }
 
 export type ThreadMessage = {
@@ -98,6 +105,7 @@ export type ThreadListItem = {
     id: string
     type: "user" | "bot"
   }
+  agent_version: AgentVersion | null
 }
 
 export type ThreadListResponse = PaginatedResponse<ThreadListItem> & {
