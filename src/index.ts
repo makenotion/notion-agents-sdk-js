@@ -20,6 +20,7 @@ export {
 } from "./pagination.js"
 export type {
   ThreadStatus,
+  AgentVersion,
   AgentData,
   ThreadMessage,
   ThreadData,
