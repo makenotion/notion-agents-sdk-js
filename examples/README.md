@@ -69,6 +69,14 @@ Shows pagination and filtering:
 - Listing messages in a thread with pagination
 - Filtering threads by status
 
+### `agent-version-info.ts`
+
+Displays agent version information:
+
+- Listing agents with their version details (id, number, published_at)
+- Showing which agent version was used for each thread
+- Understanding when version is null (unpublished agents or personal agent)
+
 ## Key patterns
 
 ### Listing agents with pagination
