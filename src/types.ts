@@ -9,11 +9,42 @@ export type AgentVersion = {
   published_at: string
 }
 
+export type ExternalUrl = {
+  url: string
+}
+
+export type FileUrl = {
+  url: string
+  expiry_time: string
+}
+
+export type CustomEmoji = {
+  id: string
+  name: string
+  url: string
+}
+
+export type CustomAgentAvatar = {
+  static_url: string
+  animated_url: string
+}
+
+export type AgentIcon =
+  | { type: "emoji"; emoji: string }
+  | { type: "file"; file: FileUrl }
+  | { type: "external"; external: ExternalUrl }
+  | { type: "custom_emoji"; custom_emoji: CustomEmoji }
+  | {
+      type: "custom_agent_avatar"
+      custom_agent_avatar: CustomAgentAvatar
+    }
+
 export type AgentData = {
   object: "agent"
   id: string
   name: string
   instruction: string | null
+  icon: AgentIcon | null
   version: AgentVersion | null
 }
 

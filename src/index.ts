@@ -21,6 +21,11 @@ export {
 export type {
   ThreadStatus,
   AgentVersion,
+  ExternalUrl,
+  FileUrl,
+  CustomEmoji,
+  CustomAgentAvatar,
+  AgentIcon,
   AgentData,
   ThreadMessage,
   ThreadData,
