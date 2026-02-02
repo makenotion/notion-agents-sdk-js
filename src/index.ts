@@ -45,5 +45,6 @@ export type {
   ThreadMessageListParams,
   AgentListParams,
   PersonalAgentId,
+  FileUploadAttachment,
 } from "./types.js"
 export { PERSONAL_AGENT_ID } from "./types.js"

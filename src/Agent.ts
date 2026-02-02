@@ -2,6 +2,7 @@ import { Client } from "@notionhq/client"
 import { Thread } from "./Thread.js"
 import type {
   ChatInvocationResponse,
+  FileUploadAttachment,
   PollThreadOptions,
   StreamChunk,
   ThreadInfo,
@@ -41,6 +42,7 @@ export class Agent {
   async chat(args: {
     message: string
     threadId?: string
+    file_uploads?: FileUploadAttachment[]
   }): Promise<ChatInvocationResponse> {
     try {
       return await this.client.request<ChatInvocationResponse>({
@@ -49,6 +51,7 @@ export class Agent {
         body: {
           message: args.message,
           ...(args.threadId ? { thread_id: args.threadId } : {}),
+          ...(args.file_uploads ? { file_uploads: args.file_uploads } : {}),
         },
       })
     } catch (error) {
@@ -116,6 +119,7 @@ export class Agent {
   async *chatStream(args: {
     message: string
     threadId?: string
+    file_uploads?: FileUploadAttachment[]
     onMessage?: (message: { role: "user" | "agent"; content: string }) => void
   }): AsyncGenerator<StreamChunk, ThreadInfo, undefined> {
     const response = await fetch(
@@ -130,6 +134,7 @@ export class Agent {
         body: JSON.stringify({
           message: args.message,
           ...(args.threadId ? { thread_id: args.threadId } : {}),
+          ...(args.file_uploads ? { file_uploads: args.file_uploads } : {}),
         }),
       },
     )

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react"
 import { Box, Text, useInput, useApp } from "ink"
 import TextInput from "ink-text-input"
+import * as fs from "node:fs/promises"
+import * as path from "node:path"
 import {
   NotionAgentsClient,
   stripLangTags,
@@ -11,6 +13,26 @@ import type { AgentData } from "@notionhq/agents-client"
 import type { Config, Message, AppMode, WorkspaceInfo } from "../types.js"
 import { saveConfig } from "../utils/config.js"
 import { AgentSelector } from "./AgentSelector.js"
+
+/**
+ * Get MIME type from file extension
+ */
+function getMimeType(filepath: string): string {
+  const ext = path.extname(filepath).toLowerCase()
+  const mimeTypes: Record<string, string> = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+    ".pdf": "application/pdf",
+    ".txt": "text/plain",
+    ".md": "text/markdown",
+    ".json": "application/json",
+    ".csv": "text/csv",
+  }
+  return mimeTypes[ext] || "application/octet-stream"
+}
 
 /**
  * Main chat interface component that provides a ChatGPT-like experience
@@ -40,6 +62,11 @@ export function ChatApp({
   const [continueInput, setContinueInput] = useState("")
   const [initError, setInitError] = useState<string | null>(null)
   const [workspaceInfo, setWorkspaceInfo] = useState<WorkspaceInfo | null>(null)
+  const [pendingAttachment, setPendingAttachment] = useState<{
+    id: string
+    filename: string
+  } | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   useEffect(() => {
     async function init() {
@@ -163,9 +190,50 @@ export function ChatApp({
     [agents, config],
   )
 
+  const handleAttach = useCallback(
+    async (filepath: string) => {
+      if (!client) return
+
+      setIsUploading(true)
+      setError(null)
+
+      try {
+        const filename = path.basename(filepath)
+        const data = await fs.readFile(filepath)
+        const contentType = getMimeType(filepath)
+
+        // Step 1: Create file upload
+        const createResponse = await client.fileUploads.create({
+          filename,
+          content_type: contentType,
+          mode: "single_part",
+        })
+
+        // Step 2: Send file contents (convert Buffer to Blob)
+        await client.fileUploads.send({
+          file_upload_id: createResponse.id,
+          file: { filename, data: new Blob([data]) },
+        })
+
+        setPendingAttachment({ id: createResponse.id, filename })
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Unknown error"
+        setError(`Failed to attach file: ${errorMessage}`)
+      }
+
+      setIsUploading(false)
+    },
+    [client],
+  )
+
   const sendMessage = useCallback(
     async (userMessage: string) => {
       if (!client || !currentAgent || isStreaming) return
+
+      // Store attachment info before clearing
+      const attachmentToSend = pendingAttachment
+      setPendingAttachment(null)
 
       setMessages((prev) => [...prev, { role: "user", content: userMessage }])
       setIsStreaming(true)
@@ -178,6 +246,9 @@ export function ChatApp({
         for await (const chunk of agent.chatStream({
           message: userMessage,
           threadId,
+          file_uploads: attachmentToSend
+            ? [{ file_upload_id: attachmentToSend.id }]
+            : undefined,
         })) {
           if (chunk.type === "started") {
             setThreadId(chunk.thread_id)
@@ -229,7 +300,7 @@ export function ChatApp({
 
       setIsStreaming(false)
     },
-    [client, currentAgent, isStreaming, threadId, config],
+    [client, currentAgent, isStreaming, threadId, config, pendingAttachment],
   )
 
   const handleSubmit = useCallback(() => {
@@ -252,9 +323,26 @@ export function ChatApp({
       return
     }
 
+    if (trimmed.startsWith("/attach ")) {
+      const filepath = trimmed.slice(8).trim()
+      if (filepath) {
+        handleAttach(filepath)
+      } else {
+        setError("Usage: /attach <filepath>")
+      }
+      setInput("")
+      return
+    }
+
+    if (trimmed === "/clear") {
+      setPendingAttachment(null)
+      setInput("")
+      return
+    }
+
     sendMessage(trimmed)
     setInput("")
-  }, [input, sendMessage, exit, onReconfigure])
+  }, [input, sendMessage, exit, onReconfigure, handleAttach])
 
   useInput(
     (input, key) => {
@@ -399,6 +487,21 @@ export function ChatApp({
         </Box>
       )}
 
+      {pendingAttachment && (
+        <Box paddingX={1}>
+          <Text color="yellow">
+            Attached: {pendingAttachment.filename} (will be sent with next
+            message, /clear to remove)
+          </Text>
+        </Box>
+      )}
+
+      {isUploading && (
+        <Box paddingX={1}>
+          <Text color="cyan">Uploading file...</Text>
+        </Box>
+      )}
+
       <Box
         paddingX={1}
         paddingY={1}
@@ -409,7 +512,9 @@ export function ChatApp({
         <Text dimColor>
           {isStreaming
             ? "Waiting for agent response..."
-            : "Type a message (or /switch, /reconfigure, /exit)"}
+            : isUploading
+              ? "Uploading file..."
+              : "Type a message (or /attach <path>, /switch, /exit)"}
         </Text>
         <Box>
           <Text color="white">&gt; </Text>
@@ -417,7 +522,7 @@ export function ChatApp({
             value={input}
             onChange={setInput}
             onSubmit={handleSubmit}
-            showCursor={!isStreaming}
+            showCursor={!isStreaming && !isUploading}
           />
         </Box>
       </Box>

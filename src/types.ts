@@ -169,3 +169,7 @@ export type ThreadMessageListParams = PaginationParams & {
 export type AgentListParams = PaginationParams & {
   name?: string
 }
+
+export type FileUploadAttachment = {
+  file_upload_id: string
+}
