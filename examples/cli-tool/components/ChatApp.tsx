@@ -52,6 +52,33 @@ function formatToolResultSummary(result: ToolResult): string {
   return parts.length > 0 ? `(${parts.join(", ")})` : ""
 }
 
+function toTimestamp(value: unknown): number | null {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null
+  }
+  if (typeof value === "string") {
+    const parsed = Date.parse(value)
+    return Number.isNaN(parsed) ? null : parsed
+  }
+  return null
+}
+
+function getLatestToolResult(results: ToolResult[]): ToolResult | null {
+  let latestResult: ToolResult | null = null
+  let latestTime = -Infinity
+
+  for (const result of results) {
+    const time =
+      toTimestamp(result.finished_at) ?? toTimestamp(result.started_at)
+    if (time !== null && time > latestTime) {
+      latestTime = time
+      latestResult = result
+    }
+  }
+
+  return latestResult ?? (results.length > 0 ? results[0] : null)
+}
+
 function getToolResultColor(
   result: ToolResult,
 ): "red" | "green" | "yellow" | undefined {
@@ -59,15 +86,23 @@ function getToolResultColor(
 
   const state = result.state.toLowerCase()
   if (state.includes("fail") || state.includes("error")) return "red"
+  if (result.finished_at != null) return "green"
   if (
     state.includes("complete") ||
     state.includes("success") ||
     state.includes("succeed") ||
+    state.includes("finish") ||
     state.includes("done")
   ) {
     return "green"
   }
-  if (state.includes("pending") || state.includes("running")) return "yellow"
+  if (
+    state.includes("pending") ||
+    state.includes("running") ||
+    state.includes("progress")
+  ) {
+    return "yellow"
+  }
 
   return undefined
 }
@@ -127,15 +162,18 @@ function AgentMessageContent({
         if (part.type === "tool_call") {
           const prettyInput = formatMaybeJson(part.input)
           const results = part.results ?? []
-          const lastResult =
-            results.length > 0 ? results[results.length - 1] : null
-          const headerSummary = lastResult
-            ? ` ${formatToolResultSummary(lastResult)}`
+          const latestResult = getLatestToolResult(results)
+          const headerSummary = latestResult
+            ? ` ${formatToolResultSummary(latestResult)}`
             : ""
           const headerColor =
-            lastResult !== null
-              ? (getToolResultColor(lastResult) ?? "yellow")
+            latestResult !== null
+              ? (getToolResultColor(latestResult) ?? "yellow")
               : "yellow"
+          const prettyOutput =
+            latestResult?.output !== null && latestResult?.output !== undefined
+              ? formatMaybeJsonValue(latestResult.output)
+              : ""
 
           return (
             <Box
@@ -157,35 +195,15 @@ function AgentMessageContent({
                   <Text dimColor>{prettyInput}</Text>
                 </Box>
               )}
-              {results.length > 0 && (
+              {latestResult && (
                 <Box flexDirection="column" marginLeft={2} marginTop={1}>
-                  {results.map((result) => {
-                    const resultColor = getToolResultColor(result)
-
-                    return (
-                      <Box key={result.id} flexDirection="column" marginTop={1}>
-                        <Text color={resultColor} dimColor={!resultColor}>
-                          result {formatToolResultSummary(result)}
-                        </Text>
-                        {result.error && (
-                          <Text color="red">error: {result.error}</Text>
-                        )}
-                        {result.output !== null &&
-                          result.output !== undefined && (
-                            <Box
-                              flexDirection="column"
-                              marginLeft={2}
-                              marginTop={1}
-                            >
-                              <Text dimColor>output</Text>
-                              <Text dimColor>
-                                {formatMaybeJsonValue(result.output)}
-                              </Text>
-                            </Box>
-                          )}
-                      </Box>
-                    )
-                  })}
+                  <Text dimColor>output</Text>
+                  {latestResult.error && (
+                    <Text color="red">error: {latestResult.error}</Text>
+                  )}
+                  {prettyOutput.length > 0 && (
+                    <Text dimColor>{prettyOutput}</Text>
+                  )}
                 </Box>
               )}
             </Box>
