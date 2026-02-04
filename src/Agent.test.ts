@@ -9,7 +9,12 @@ import {
   mockHTTPErrorResponse,
   mockAgentNotFound,
 } from "./test-utils/index.js"
-import { StreamChunk, PERSONAL_AGENT_ID } from "./types.js"
+import {
+  StreamChunk,
+  StreamMessage,
+  ThreadInfo,
+  PERSONAL_AGENT_ID,
+} from "./types.js"
 import { StreamError } from "./errors.js"
 
 describe("Agent", () => {
@@ -118,6 +123,58 @@ describe("Agent", () => {
       })
 
       await agent.chat({ message: "Follow up", threadId: "thread_456" })
+    })
+
+    it("should start a new chat with attachments", async () => {
+      const mockResponse = mockChatInvocation({
+        agent_id: "agent_123",
+        thread_id: "thread_attachments",
+      })
+
+      const mockClient = createMockClient(async ({ path, method, body }) => {
+        expect(path).toBe("agents/agent_123/chat")
+        expect(method).toBe("post")
+        expect(body).toEqual({
+          attachments: [
+            {
+              file_upload: { id: "upload_123" },
+              name: "spec.pdf",
+            },
+          ],
+        })
+        return mockResponse
+      })
+
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      const result = await agent.chat({
+        attachments: [{ fileUploadId: "upload_123", name: "spec.pdf" }],
+      })
+
+      expect(result).toEqual(mockResponse)
+    })
+
+    it("should validate missing message and attachments", async () => {
+      const mockClient = createMockClient(async () => {
+        throw new Error("Should not be called")
+      })
+
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      await expect(agent.chat({ message: "   " })).rejects.toMatchObject({
+        code: "validation_error",
+        message: "Either message or attachments is required.",
+      })
     })
   })
 
@@ -313,8 +370,8 @@ describe("Agent", () => {
     it("should stream chat responses", async () => {
       const chunks = [
         '{"type":"started","thread_id":"thread_123","agent_id":"agent_123"}\n',
-        '{"type":"message","role":"user","content":"Hello"}\n',
-        '{"type":"message","role":"agent","content":"Hi there!"}\n',
+        '{"type":"message","id":"msg_user_1","role":"user","content":"Hello"}\n',
+        '{"type":"message","id":"msg_agent_1","role":"agent","content":"Hi there!"}\n',
         '{"type":"done","thread_id":"thread_123"}\n',
       ]
 
@@ -331,7 +388,7 @@ describe("Agent", () => {
         auth: "test_token",
       })
 
-      const messages: Array<{ role: "user" | "agent"; content: string }> = []
+      const messages: StreamMessage[] = []
 
       const generator = agent.chatStream({
         message: "Hello",
@@ -339,8 +396,14 @@ describe("Agent", () => {
       })
 
       const receivedChunks: StreamChunk[] = []
-      for await (const chunk of generator) {
-        receivedChunks.push(chunk)
+      let threadInfo: ThreadInfo | undefined = undefined
+      while (true) {
+        const { value, done } = await generator.next()
+        if (done) {
+          threadInfo = value
+          break
+        }
+        receivedChunks.push(value)
       }
 
       expect(receivedChunks).toHaveLength(4)
@@ -350,8 +413,22 @@ describe("Agent", () => {
         agent_id: "agent_123",
       })
       expect(messages).toHaveLength(2)
-      expect(messages[0]).toEqual({ role: "user", content: "Hello" })
-      expect(messages[1]).toEqual({ role: "agent", content: "Hi there!" })
+      expect(messages[0]).toMatchObject({
+        id: "msg_user_1",
+        role: "user",
+        content: "Hello",
+      })
+      expect(messages[1]).toMatchObject({
+        id: "msg_agent_1",
+        role: "agent",
+        content: "Hi there!",
+      })
+
+      expect(threadInfo).toMatchObject({
+        thread_id: "thread_123",
+        agent_id: "agent_123",
+        messages: expect.any(Array),
+      })
 
       expect(mockFetch).toHaveBeenCalledWith(
         "https://api.notion.com/v1/agents/agent_123/chatStream",
@@ -367,8 +444,8 @@ describe("Agent", () => {
     it("should stream chat responses for personal agent", async () => {
       const chunks = [
         `{"type":"started","thread_id":"thread_456","agent_id":"${PERSONAL_AGENT_ID}"}\n`,
-        '{"type":"message","role":"user","content":"Hello Notion AI"}\n',
-        '{"type":"message","role":"agent","content":"Hello! How can I help?"}\n',
+        '{"type":"message","id":"msg_user_1","role":"user","content":"Hello Notion AI"}\n',
+        '{"type":"message","id":"msg_agent_1","role":"agent","content":"Hello! How can I help?"}\n',
         '{"type":"done","thread_id":"thread_456"}\n',
       ]
 
@@ -385,7 +462,7 @@ describe("Agent", () => {
         auth: "test_token",
       })
 
-      const messages: Array<{ role: "user" | "agent"; content: string }> = []
+      const messages: StreamMessage[] = []
 
       const generator = agent.chatStream({
         message: "Hello Notion AI",
@@ -393,8 +470,10 @@ describe("Agent", () => {
       })
 
       const receivedChunks: StreamChunk[] = []
-      for await (const chunk of generator) {
-        receivedChunks.push(chunk)
+      while (true) {
+        const { value, done } = await generator.next()
+        if (done) break
+        receivedChunks.push(value)
       }
 
       expect(receivedChunks).toHaveLength(4)
@@ -414,6 +493,115 @@ describe("Agent", () => {
           }),
         }),
       )
+    })
+
+    it("should include verbose=false query param when requested", async () => {
+      const chunks = [
+        '{"type":"started","thread_id":"thread_123","agent_id":"agent_123"}\n',
+        '{"type":"message","id":"msg_user_1","role":"user","content":"Hello"}\n',
+        '{"type":"done","thread_id":"thread_123"}\n',
+      ]
+
+      mockFetch.mockResolvedValue(mockStreamResponse(chunks))
+
+      const mockClient = createMockClient(vi.fn())
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      const generator = agent.chatStream({ message: "Hello", verbose: false })
+      while (true) {
+        const { done } = await generator.next()
+        if (done) break
+      }
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://api.notion.com/v1/agents/agent_123/chatStream?verbose=false",
+        expect.any(Object),
+      )
+    })
+
+    it("should send attachments-only requests", async () => {
+      const chunks = [
+        '{"type":"started","thread_id":"thread_123","agent_id":"agent_123"}\n',
+        '{"type":"message","id":"msg_user_1","role":"user","content":"","attachments":[{"name":"spec.pdf","content_type":"application/pdf","url":"https://example.com/spec.pdf"}]}\n',
+        '{"type":"done","thread_id":"thread_123"}\n',
+      ]
+
+      mockFetch.mockResolvedValue(mockStreamResponse(chunks))
+
+      const mockClient = createMockClient(vi.fn())
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      const generator = agent.chatStream({
+        attachments: [{ fileUploadId: "upload_123", name: "spec.pdf" }],
+      })
+      while (true) {
+        const { done } = await generator.next()
+        if (done) break
+      }
+
+      const fetchInit = mockFetch.mock.calls[0]?.[1] as RequestInit | undefined
+      expect(fetchInit?.body).toBe(
+        JSON.stringify({
+          attachments: [
+            {
+              file_upload: { id: "upload_123" },
+              name: "spec.pdf",
+            },
+          ],
+        }),
+      )
+    })
+
+    it("should upsert cumulative agent messages by id", async () => {
+      const chunks = [
+        '{"type":"started","thread_id":"thread_123","agent_id":"agent_123"}\n',
+        '{"type":"message","id":"msg_user_1","role":"user","content":"Hello"}\n',
+        '{"type":"message","id":"msg_agent_1","role":"agent","content":"Hi"}\n',
+        '{"type":"message","id":"msg_agent_1","role":"agent","content":"Hi there!"}\n',
+        '{"type":"done","thread_id":"thread_123"}\n',
+      ]
+
+      mockFetch.mockResolvedValue(mockStreamResponse(chunks))
+
+      const mockClient = createMockClient(vi.fn())
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      const generator = agent.chatStream({ message: "Hello" })
+      const received: StreamChunk[] = []
+      let threadInfo: ThreadInfo | undefined = undefined
+      while (true) {
+        const { value, done } = await generator.next()
+        if (done) {
+          threadInfo = value
+          break
+        }
+        received.push(value)
+      }
+
+      expect(received).toHaveLength(5)
+      expect(threadInfo).toMatchObject({
+        thread_id: "thread_123",
+        agent_id: "agent_123",
+        messages: [
+          { id: "msg_user_1", role: "user", content: "Hello" },
+          { id: "msg_agent_1", role: "agent", content: "Hi there!" },
+        ],
+      })
     })
 
     it("should handle errors in stream", async () => {
@@ -543,7 +731,7 @@ describe("Agent", () => {
 
     it("should throw StreamError when stream doesn't provide thread_id", async () => {
       const chunks = [
-        '{"type":"message","role":"user","content":"Hello"}\n',
+        '{"type":"message","id":"msg_user_1","role":"user","content":"Hello"}\n',
         '{"type":"done","thread_id":"thread_123"}\n',
       ]
 

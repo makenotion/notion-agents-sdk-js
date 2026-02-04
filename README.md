@@ -164,6 +164,17 @@ await agent.chat({
   message: "Follow up question",
   threadId: invocation.thread_id,
 })
+
+// Attach uploaded files (from the File Upload API)
+await agent.chat({
+  message: "Please review these files",
+  attachments: [{ fileUploadId: "upload_123", name: "spec.pdf" }],
+})
+
+// Attachments-only turns are supported
+await agent.chat({
+  attachments: [{ fileUploadId: "upload_123" }],
+})
 ```
 
 #### Streaming mode
@@ -185,8 +196,8 @@ try {
   }
 }
 
-// Use the onMessage callback and get conversation summary afterward
-const threadInfo = await agent.chatStream({
+// Use the onMessage callback for incremental updates
+const stream = agent.chatStream({
   message: "Hello!",
   onMessage: (message) => {
     if (message.role === "agent") {
@@ -196,7 +207,17 @@ const threadInfo = await agent.chatStream({
   },
 })
 
-// After streaming completes, threadInfo contains:
+// If you need the final ThreadInfo (including ordered, upserted messages by id),
+// you can manually iterate to capture the generator's return value:
+let threadInfo
+while (true) {
+  const { value, done } = await stream.next()
+  if (done) {
+    threadInfo = value
+    break
+  }
+}
+
 console.log(`Thread ID: ${threadInfo.thread_id}`)
 console.log(`Agent ID: ${threadInfo.agent_id}`)
 console.log(`Full conversation:`, threadInfo.messages)
@@ -386,10 +407,13 @@ Starts or continues a chat conversation.
 
 ```typescript
 await agent.chat({
-  message: string,
-  threadId?: string
+  message?: string,
+  attachments?: Array<{ fileUploadId: string, name?: string }>,
+  threadId?: string,
 });
 ```
+
+Note: You must provide either `message` or `attachments`.
 
 Returns: `Promise<ChatInvocationResponse>`
 
@@ -399,11 +423,20 @@ Streams a chat conversation in real-time.
 
 ```typescript
 agent.chatStream({
-  message: string,
+  message?: string,
+  attachments?: Array<{ fileUploadId: string, name?: string }>,
   threadId?: string,
-  onMessage?: (message: { role: "user" | "agent", content: string }) => void
+  verbose?: boolean,
+  onMessage?: (message: StreamMessage) => void
 });
 ```
+
+Notes:
+
+- Message chunks include a stable `id`. Agent message chunks may be emitted multiple times for the same `id` as more information arrives; clients should treat them as upserts keyed by `id`.
+- User message chunks may include `attachments` (signed URLs and metadata).
+- When `verbose=true` (default), agent message chunks may include `content_parts` with structured output (thinking, tool calls/results, follow-ups).
+- When `verbose=false`, agent chunks omit `content_parts` and only return `content`.
 
 Returns: `AsyncGenerator<StreamChunk, ThreadInfo, undefined>`
 
@@ -492,6 +525,7 @@ Lists messages in the thread with pagination and filtering.
 
 ```typescript
 await thread.listMessages({
+  verbose?: boolean,
   role?: "user" | "agent",
   page_size?: number,
   start_cursor?: string
@@ -499,6 +533,8 @@ await thread.listMessages({
 ```
 
 Returns: `Promise<ThreadMessageListResponse>`
+
+Note: When available, messages may include `attachments` (user messages) and `content_parts` (agent messages, when `verbose=true`).
 
 #### PollThreadOptions
 

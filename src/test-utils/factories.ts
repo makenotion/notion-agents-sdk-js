@@ -100,6 +100,10 @@ export const mockThreadMessageItem = (
   id: "msg_123",
   role: "user",
   content: "Hello",
+  parent: {
+    type: "thread",
+    id: "thread_456",
+  },
   ...overrides,
 })
 
