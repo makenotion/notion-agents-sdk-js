@@ -55,11 +55,14 @@ async function main() {
     })
 
     const thread = agent.thread(threadId)
-    const messagesResponse = await thread.listMessages({ role: "agent" })
+    const messagesResponse = await thread.listMessages({
+      role: "agent",
+      page_size: 1,
+    })
 
     if (messagesResponse.results.length > 0) {
-      const agentMessage =
-        messagesResponse.results[messagesResponse.results.length - 1]
+      // Messages are returned in reverse chronological order (most recent first)
+      const agentMessage = messagesResponse.results[0]
       console.log(`\nAgent: ${agentMessage.content}\n`)
     }
   }
