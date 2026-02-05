@@ -10,6 +10,7 @@ export type Config = {
 }
 
 export type Message = {
+  id?: string
   role: "user" | "agent"
   content: string
   isPartial?: boolean

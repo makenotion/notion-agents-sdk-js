@@ -33,11 +33,21 @@ async function main() {
   console.log("User: Hello!\n")
   console.log("Agent: ")
 
+  let lastPrintedByMessageId: Record<string, string> = {}
+
   for await (const chunk of agent.chatStream({
     message: "Hello!",
     onMessage: (message) => {
       if (message.role === "agent") {
-        process.stdout.write(message.content)
+        const prev = lastPrintedByMessageId[message.id] ?? ""
+        const next = message.content
+        if (next.startsWith(prev)) {
+          process.stdout.write(next.slice(prev.length))
+        } else {
+          // Fallback if content isn't strictly cumulative
+          process.stdout.write(`\n${next}`)
+        }
+        lastPrintedByMessageId[message.id] = next
       }
     },
   })) {

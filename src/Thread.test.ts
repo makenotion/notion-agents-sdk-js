@@ -124,6 +124,23 @@ describe("Thread", () => {
 
       expect(result.results[0].role).toBe("agent")
     })
+
+    it("should include verbose param", async () => {
+      const mockResponse = mockThreadMessageListResponse()
+
+      const mockClient = createMockClient(async ({ query }) => {
+        expect(query).toEqual({ verbose: "false" })
+        return mockResponse
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      await thread.listMessages({ verbose: false })
+    })
   })
 
   describe("poll", () => {

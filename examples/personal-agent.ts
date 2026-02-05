@@ -30,6 +30,7 @@ async function main() {
   console.log("Agent: ")
 
   let threadId: string | undefined
+  const lastPrintedByMessageId: Record<string, string> = {}
 
   for await (const chunk of personalAgent.chatStream({
     message: "What can you help me with?",
@@ -38,7 +39,14 @@ async function main() {
       threadId = chunk.thread_id
     } else if (chunk.type === "message" && chunk.role === "agent") {
       const cleanContent = stripLangTags(chunk.content)
-      process.stdout.write(cleanContent)
+      const prev = lastPrintedByMessageId[chunk.id] ?? ""
+      if (cleanContent.startsWith(prev)) {
+        process.stdout.write(cleanContent.slice(prev.length))
+      } else {
+        // Fallback if content isn't strictly cumulative
+        process.stdout.write(`\n${cleanContent}`)
+      }
+      lastPrintedByMessageId[chunk.id] = cleanContent
     }
   }
 

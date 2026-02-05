@@ -53,6 +53,60 @@ export type ThreadMessage = {
   content: string
 }
 
+export type ChatAttachmentInput = {
+  fileUploadId: string
+  name?: string
+}
+
+export type ThreadMessageAttachment = {
+  name: string
+  content_type: string
+  url: string
+  expiry_time?: string
+}
+
+export type ToolResult = {
+  id: string
+  agent_step_id: string | null
+  tool_call_id: string | null
+  tool_name: string
+  tool_type: string
+  state: string
+  input: unknown | null
+  output: unknown | null
+  error: string | null
+  started_at: number
+  finished_at: number | null
+  duration_ms: number | null
+}
+
+export type AgentContentPart =
+  | { type: "text"; text: string }
+  | { type: "thinking"; text: string }
+  | {
+      type: "tool_call"
+      tool_call_id: string | null
+      tool_name: string
+      input: string
+      results?: ToolResult[]
+    }
+  | { type: "follow_ups"; follow_ups: Array<{ label: string; message: string }> }
+  | { type: "custom_agent_template_picker" }
+
+export type StreamMessage =
+  | {
+      id: string
+      role: "user"
+      content: string
+      attachments?: ThreadMessageAttachment[]
+    }
+  | {
+      id: string
+      role: "agent"
+      content: string
+      content_parts?: AgentContentPart[]
+    }
+
 export type ThreadData = {
   object: "thread"
   agent_id: string
@@ -79,7 +133,7 @@ export type AgentListResponse = {
 
 export type StreamChunk =
   | { type: "started"; thread_id: string; agent_id: string }
-  | { type: "message"; role: "user" | "agent"; content: string }
+  | ({ type: "message" } & StreamMessage)
   | { type: "done"; thread_id: string }
   | {
       type: "error"
@@ -97,7 +151,7 @@ export type StreamChunk =
 export type ThreadInfo = {
   thread_id: string
   agent_id: string
-  messages: Array<ThreadMessage>
+  messages: StreamMessage[]
 }
 
 export type PollThreadOptions = {
@@ -151,11 +205,19 @@ export type ThreadListParams = PaginationParams & {
   created_by_id?: string
 }
 
+export type ThreadMessageParent = {
+  type: "thread"
+  id: string
+}
+
 export type ThreadMessageItem = {
   object: "thread_message"
   id: string
   role: "user" | "agent"
   content: string
+  parent: ThreadMessageParent
+  attachments?: ThreadMessageAttachment[]
+  content_parts?: AgentContentPart[]
 }
 
 export type ThreadMessageListResponse = PaginatedResponse<ThreadMessageItem> & {
@@ -163,6 +225,7 @@ export type ThreadMessageListResponse = PaginatedResponse<ThreadMessageItem> & {
 }
 
 export type ThreadMessageListParams = PaginationParams & {
+  verbose?: boolean
   role?: "user" | "agent"
 }
 

@@ -1,15 +1,17 @@
 import { Client } from "@notionhq/client"
 import { Thread } from "./Thread.js"
 import type {
+  ChatAttachmentInput,
   ChatInvocationResponse,
   PollThreadOptions,
   StreamChunk,
+  StreamMessage,
   ThreadInfo,
   ThreadListParams,
   ThreadListResponse,
   ThreadListItem,
 } from "./types.js"
-import { StreamError, AgentNotFoundError } from "./errors.js"
+import { StreamError, AgentNotFoundError, NotionAgentsError } from "./errors.js"
 
 export class Agent {
   public readonly id: string
@@ -38,18 +40,48 @@ export class Agent {
     this.notionVersion = args.notionVersion ?? "2025-09-03"
   }
 
-  async chat(args: {
-    message: string
+  private buildChatRequestBody(args: {
+    message?: string
+    attachments?: ChatAttachmentInput[]
     threadId?: string
-  }): Promise<ChatInvocationResponse> {
+  }): Record<string, unknown> {
+    const message =
+      typeof args.message === "string" && args.message.trim().length > 0
+        ? args.message
+        : undefined
+
+    const attachments =
+      args.attachments && args.attachments.length > 0
+        ? args.attachments.map((attachment) => ({
+            file_upload: { id: attachment.fileUploadId },
+            ...(attachment.name ? { name: attachment.name } : {}),
+          }))
+        : undefined
+
+    if (!message && !attachments) {
+      throw new NotionAgentsError(
+        "Either message or attachments is required.",
+        "validation_error",
+      )
+    }
+
+    return {
+      ...(message ? { message } : {}),
+      ...(args.threadId ? { thread_id: args.threadId } : {}),
+      ...(attachments ? { attachments } : {}),
+    }
+  }
+
+  async chat(
+    args:
+      | { message: string; attachments?: ChatAttachmentInput[]; threadId?: string }
+      | { message?: string; attachments: ChatAttachmentInput[]; threadId?: string },
+  ): Promise<ChatInvocationResponse> {
     try {
       return await this.client.request<ChatInvocationResponse>({
         path: `agents/${this.id}/chat`,
         method: "post",
-        body: {
-          message: args.message,
-          ...(args.threadId ? { thread_id: args.threadId } : {}),
-        },
+        body: this.buildChatRequestBody(args),
       })
     } catch (error) {
       if (this.isAgentNotFoundError(error)) {
@@ -105,6 +137,10 @@ export class Agent {
   }
 
   private isAgentNotFoundError(error: unknown): boolean {
+    if (error instanceof NotionAgentsError) {
+      return false
+    }
+
     return (
       error !== null &&
       typeof error === "object" &&
@@ -113,13 +149,34 @@ export class Agent {
     )
   }
 
-  async *chatStream(args: {
+  chatStream(args: {
     message: string
+    attachments?: ChatAttachmentInput[]
     threadId?: string
-    onMessage?: (message: { role: "user" | "agent"; content: string }) => void
+    verbose?: boolean
+    onMessage?: (message: StreamMessage) => void
+  }): AsyncGenerator<StreamChunk, ThreadInfo, undefined>
+  chatStream(args: {
+    message?: string
+    attachments: ChatAttachmentInput[]
+    threadId?: string
+    verbose?: boolean
+    onMessage?: (message: StreamMessage) => void
+  }): AsyncGenerator<StreamChunk, ThreadInfo, undefined>
+  async *chatStream(args: {
+    message?: string
+    attachments?: ChatAttachmentInput[]
+    threadId?: string
+    verbose?: boolean
+    onMessage?: (message: StreamMessage) => void
   }): AsyncGenerator<StreamChunk, ThreadInfo, undefined> {
+    const url = new URL(`${this.baseUrl}/v1/agents/${this.id}/chatStream`)
+    if (args.verbose === false) {
+      url.searchParams.set("verbose", "false")
+    }
+
     const response = await fetch(
-      `${this.baseUrl}/v1/agents/${this.id}/chatStream`,
+      url.toString(),
       {
         method: "POST",
         headers: {
@@ -127,10 +184,7 @@ export class Agent {
           "Content-Type": "application/json",
           "Notion-Version": this.notionVersion,
         },
-        body: JSON.stringify({
-          message: args.message,
-          ...(args.threadId ? { thread_id: args.threadId } : {}),
-        }),
+        body: JSON.stringify(this.buildChatRequestBody(args)),
       },
     )
 
@@ -147,7 +201,8 @@ export class Agent {
 
     let threadId: string | undefined
     let agentId: string | undefined
-    const messagesByRole: Map<"user" | "agent", string> = new Map()
+    const messagesById: Map<string, StreamMessage> = new Map()
+    const messageOrder: string[] = []
 
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
@@ -174,8 +229,29 @@ export class Agent {
             threadId = chunk.thread_id
             agentId = chunk.agent_id
           } else if (chunk.type === "message") {
-            messagesByRole.set(chunk.role, chunk.content)
-            args.onMessage?.({ role: chunk.role, content: chunk.content })
+            const message: StreamMessage =
+              chunk.role === "user"
+                ? {
+                    id: chunk.id,
+                    role: "user",
+                    content: chunk.content,
+                    ...(chunk.attachments ? { attachments: chunk.attachments } : {}),
+                  }
+                : {
+                    id: chunk.id,
+                    role: "agent",
+                    content: chunk.content,
+                    ...(chunk.content_parts
+                      ? { content_parts: chunk.content_parts }
+                      : {}),
+                  }
+
+            if (!messagesById.has(message.id)) {
+              messageOrder.push(message.id)
+            }
+            messagesById.set(message.id, message)
+
+            args.onMessage?.(message)
           } else if (chunk.type === "error") {
             throw new StreamError(chunk.message, chunk.code)
           }
@@ -192,21 +268,9 @@ export class Agent {
       )
     }
 
-    const messages: Array<{ role: "user" | "agent"; content: string }> = []
-    if (messagesByRole.has("user")) {
-      messages.push({
-        role: "user",
-        // SAFETY: We checked the map key exists in the `if` statement above.
-        content: messagesByRole.get("user")!,
-      })
-    }
-    if (messagesByRole.has("agent")) {
-      messages.push({
-        role: "agent",
-        // SAFETY: We checked the map key exists in the `if` statement above.
-        content: messagesByRole.get("agent")!,
-      })
-    }
+    const messages = messageOrder
+      .map((id) => messagesById.get(id))
+      .filter((message): message is StreamMessage => message !== undefined)
 
     return {
       thread_id: threadId,

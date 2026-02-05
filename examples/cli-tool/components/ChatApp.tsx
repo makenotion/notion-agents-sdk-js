@@ -171,8 +171,8 @@ export function ChatApp({
       setIsStreaming(true)
       setError(null)
 
-      let agentMessageContent = ""
       const agent = client.agents.agent(currentAgent.id)
+      const partialAgentMessageIds = new Set<string>()
 
       try {
         for await (const chunk of agent.chatStream({
@@ -187,23 +187,23 @@ export function ChatApp({
             }
             saveConfig(updatedConfig)
           } else if (chunk.type === "message" && chunk.role === "agent") {
-            agentMessageContent = chunk.content
             const cleanContent = stripLangTags(chunk.content)
+            partialAgentMessageIds.add(chunk.id)
             setMessages((prev) => {
               const newMessages = [...prev]
-              const lastMessage = newMessages[newMessages.length - 1]
-              if (lastMessage?.role === "agent" && lastMessage.isPartial) {
-                newMessages[newMessages.length - 1] = {
-                  role: "agent",
-                  content: cleanContent,
-                  isPartial: true,
-                }
+              const existingIndex = newMessages.findIndex(
+                (message) => message.id === chunk.id,
+              )
+              const nextMessage = {
+                id: chunk.id,
+                role: "agent" as const,
+                content: cleanContent,
+                isPartial: true,
+              }
+              if (existingIndex !== -1) {
+                newMessages[existingIndex] = nextMessage
               } else {
-                newMessages.push({
-                  role: "agent",
-                  content: cleanContent,
-                  isPartial: true,
-                })
+                newMessages.push(nextMessage)
               }
               return newMessages
             })
@@ -213,15 +213,15 @@ export function ChatApp({
         }
 
         setMessages((prev) => {
-          const newMessages = [...prev]
-          const lastMessage = newMessages[newMessages.length - 1]
-          if (lastMessage?.isPartial) {
-            newMessages[newMessages.length - 1] = {
-              role: "agent",
-              content: stripLangTags(agentMessageContent),
+          return prev.map((message) => {
+            if (message.id && partialAgentMessageIds.has(message.id)) {
+              return {
+                ...message,
+                isPartial: undefined,
+              }
             }
-          }
-          return newMessages
+            return message
+          })
         })
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to send message")
