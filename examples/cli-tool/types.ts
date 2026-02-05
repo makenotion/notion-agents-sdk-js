@@ -2,6 +2,11 @@
  * Shared type definitions for the CLI tool.
  */
 
+import type {
+  AgentContentPart,
+  ThreadMessageAttachment,
+} from "@notionhq/agents-client"
+
 export type Config = {
   apiToken: string
   baseUrl?: string
@@ -13,6 +18,8 @@ export type Message = {
   id?: string
   role: "user" | "agent"
   content: string
+  attachments?: ThreadMessageAttachment[]
+  contentParts?: AgentContentPart[]
   isPartial?: boolean
 }
 

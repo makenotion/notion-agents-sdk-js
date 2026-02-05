@@ -7,10 +7,262 @@ import {
   isPersonalAgent,
 } from "@notionhq/agents-client"
 import { Client } from "@notionhq/client"
-import type { AgentData } from "@notionhq/agents-client"
+import type {
+  AgentContentPart,
+  AgentData,
+  ToolResult,
+} from "@notionhq/agents-client"
 import type { Config, Message, AppMode, WorkspaceInfo } from "../types.js"
 import { saveConfig } from "../utils/config.js"
 import { AgentSelector } from "./AgentSelector.js"
+
+function safeJsonStringify(value: unknown): string {
+  if (value === undefined) return "undefined"
+  if (value === null) return "null"
+  if (typeof value === "string") return value
+
+  try {
+    return JSON.stringify(value, null, 2)
+  } catch {
+    return String(value)
+  }
+}
+
+function formatMaybeJson(input: string): string {
+  const trimmed = input.trim()
+  if (trimmed.length === 0) return ""
+
+  try {
+    return JSON.stringify(JSON.parse(trimmed), null, 2)
+  } catch {
+    return input
+  }
+}
+
+function formatMaybeJsonValue(value: unknown): string {
+  if (value === undefined || value === null) return ""
+  if (typeof value === "string") return formatMaybeJson(value)
+  return safeJsonStringify(value)
+}
+
+function formatToolResultSummary(result: ToolResult): string {
+  const duration =
+    typeof result.duration_ms === "number" ? `${result.duration_ms}ms` : null
+  const parts = [result.state, duration].filter(Boolean)
+  return parts.length > 0 ? `(${parts.join(", ")})` : ""
+}
+
+function toTimestamp(value: unknown): number | null {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null
+  }
+  if (typeof value === "string") {
+    const parsed = Date.parse(value)
+    return Number.isNaN(parsed) ? null : parsed
+  }
+  return null
+}
+
+function getLatestToolResult(results: ToolResult[]): ToolResult | null {
+  let latestResult: ToolResult | null = null
+  let latestTime = -Infinity
+
+  for (const result of results) {
+    const time =
+      toTimestamp(result.finished_at) ?? toTimestamp(result.started_at)
+    if (time !== null && time > latestTime) {
+      latestTime = time
+      latestResult = result
+    }
+  }
+
+  return latestResult ?? (results.length > 0 ? results[0] : null)
+}
+
+function getToolResultColor(
+  result: ToolResult,
+): "red" | "green" | "yellow" | undefined {
+  if (result.error) return "red"
+
+  const state = result.state.toLowerCase()
+  if (state.includes("fail") || state.includes("error")) return "red"
+  if (result.finished_at != null) return "green"
+  if (
+    state.includes("complete") ||
+    state.includes("success") ||
+    state.includes("succeed") ||
+    state.includes("finish") ||
+    state.includes("done")
+  ) {
+    return "green"
+  }
+  if (
+    state.includes("pending") ||
+    state.includes("running") ||
+    state.includes("progress")
+  ) {
+    return "yellow"
+  }
+
+  return undefined
+}
+
+type MessageGroup = {
+  role: Message["role"]
+  messages: Message[]
+}
+
+function groupConsecutiveAgentMessages(messages: Message[]): MessageGroup[] {
+  const groups: MessageGroup[] = []
+
+  for (const message of messages) {
+    const lastGroup = groups[groups.length - 1]
+    if (message.role === "agent" && lastGroup?.role === "agent") {
+      lastGroup.messages.push(message)
+      continue
+    }
+
+    groups.push({ role: message.role, messages: [message] })
+  }
+
+  return groups
+}
+
+function AgentMessageContent({
+  content,
+  contentParts,
+}: {
+  content: string
+  contentParts?: AgentContentPart[]
+}) {
+  const parts = contentParts ?? []
+  const hasTextPart = parts.some((part) => part.type === "text")
+
+  return (
+    <Box flexDirection="column">
+      {parts.map((part, idx) => {
+        const marginTop = idx === 0 ? 0 : 1
+
+        if (part.type === "thinking") {
+          const text = stripLangTags(part.text)
+          return (
+            <Box
+              key={`thinking-${idx}`}
+              flexDirection="column"
+              marginTop={marginTop}
+            >
+              <Text dimColor italic>
+                Thinking
+              </Text>
+              <Text dimColor>{text}</Text>
+            </Box>
+          )
+        }
+
+        if (part.type === "tool_call") {
+          const prettyInput = formatMaybeJson(part.input)
+          const results = part.results ?? []
+          const latestResult = getLatestToolResult(results)
+          const headerSummary = latestResult
+            ? ` ${formatToolResultSummary(latestResult)}`
+            : ""
+          const headerColor =
+            latestResult !== null
+              ? (getToolResultColor(latestResult) ?? "yellow")
+              : "yellow"
+          const prettyOutput =
+            latestResult?.output !== null && latestResult?.output !== undefined
+              ? formatMaybeJsonValue(latestResult.output)
+              : ""
+
+          return (
+            <Box
+              key={`tool-${idx}`}
+              flexDirection="column"
+              marginTop={marginTop}
+              marginLeft={2}
+            >
+              <Text color={headerColor}>
+                Tool: {part.tool_name}
+                {headerSummary}
+              </Text>
+              {part.tool_call_id && (
+                <Text dimColor>id: {part.tool_call_id}</Text>
+              )}
+              {prettyInput.length > 0 && (
+                <Box flexDirection="column" marginLeft={2} marginTop={1}>
+                  <Text dimColor>input</Text>
+                  <Text dimColor>{prettyInput}</Text>
+                </Box>
+              )}
+              {latestResult && (
+                <Box flexDirection="column" marginLeft={2} marginTop={1}>
+                  <Text dimColor>output</Text>
+                  {latestResult.error && (
+                    <Text color="red">error: {latestResult.error}</Text>
+                  )}
+                  {prettyOutput.length > 0 && (
+                    <Text dimColor>{prettyOutput}</Text>
+                  )}
+                </Box>
+              )}
+            </Box>
+          )
+        }
+
+        if (part.type === "text") {
+          const text = stripLangTags(part.text)
+          return (
+            <Box
+              key={`text-${idx}`}
+              flexDirection="column"
+              marginTop={marginTop}
+            >
+              <Text>{text}</Text>
+            </Box>
+          )
+        }
+
+        if (part.type === "follow_ups") {
+          return (
+            <Box
+              key={`follow-ups-${idx}`}
+              flexDirection="column"
+              marginTop={marginTop}
+            >
+              <Text dimColor>Follow ups</Text>
+              {part.follow_ups.map((followUp) => (
+                <Text key={followUp.label} dimColor>
+                  - {followUp.label}: {followUp.message}
+                </Text>
+              ))}
+            </Box>
+          )
+        }
+
+        if (part.type === "custom_agent_template_picker") {
+          return (
+            <Box
+              key={`template-picker-${idx}`}
+              flexDirection="column"
+              marginTop={marginTop}
+            >
+              <Text dimColor>[Template picker]</Text>
+            </Box>
+          )
+        }
+
+        return null
+      })}
+
+      {!hasTextPart && content.trim().length > 0 && (
+        <Box flexDirection="column" marginTop={parts.length > 0 ? 1 : 0}>
+          <Text>{content}</Text>
+        </Box>
+      )}
+    </Box>
+  )
+}
 
 /**
  * Main chat interface component that provides a ChatGPT-like experience
@@ -40,6 +292,8 @@ export function ChatApp({
   const [continueInput, setContinueInput] = useState("")
   const [initError, setInitError] = useState<string | null>(null)
   const [workspaceInfo, setWorkspaceInfo] = useState<WorkspaceInfo | null>(null)
+
+  const messageGroups = groupConsecutiveAgentMessages(messages)
 
   useEffect(() => {
     async function init() {
@@ -122,8 +376,11 @@ export function ChatApp({
       const loadedMessages: Message[] = messagesResponse.results
         .reverse()
         .map((msg) => ({
+          id: msg.id,
           role: msg.role,
           content: stripLangTags(msg.content),
+          ...(msg.attachments ? { attachments: msg.attachments } : {}),
+          ...(msg.content_parts ? { contentParts: msg.content_parts } : {}),
         }))
 
       setMessages(loadedMessages)
@@ -194,11 +451,15 @@ export function ChatApp({
               const existingIndex = newMessages.findIndex(
                 (message) => message.id === chunk.id,
               )
-              const nextMessage = {
+              const existingMessage =
+                existingIndex !== -1 ? newMessages[existingIndex] : undefined
+              const nextMessage: Message = {
+                ...(existingMessage ?? {}),
                 id: chunk.id,
                 role: "agent" as const,
                 content: cleanContent,
                 isPartial: true,
+                ...(chunk.content_parts ? { contentParts: chunk.content_parts } : {}),
               }
               if (existingIndex !== -1) {
                 newMessages[existingIndex] = nextMessage
@@ -378,14 +639,48 @@ export function ChatApp({
       )}
 
       <Box flexDirection="column" flexGrow={1} paddingX={1} paddingY={1}>
-        {messages.map((msg, idx) => (
-          <Box key={idx} flexDirection="column" marginBottom={1}>
-            <Text bold color={msg.role === "user" ? "green" : "blue"}>
-              {msg.role === "user" ? "You" : currentAgent?.name}:
-            </Text>
-            <Text>{msg.content}</Text>
-          </Box>
-        ))}
+        {messageGroups.map((group, groupIdx) => {
+          const firstMessage = group.messages[0]
+
+          if (group.role === "user") {
+            return (
+              <Box
+                key={firstMessage?.id ?? `user-${groupIdx}`}
+                flexDirection="column"
+                marginBottom={1}
+              >
+                <Text bold color="green">
+                  You:
+                </Text>
+                <Text>{firstMessage?.content ?? ""}</Text>
+              </Box>
+            )
+          }
+
+          return (
+            <Box
+              key={firstMessage?.id ?? `agent-${groupIdx}`}
+              flexDirection="column"
+              marginBottom={1}
+            >
+              <Text bold color="blue">
+                {currentAgent?.name || "Agent"}:
+              </Text>
+              {group.messages.map((message, messageIdx) => (
+                <Box
+                  key={message.id ?? `${groupIdx}-${messageIdx}`}
+                  flexDirection="column"
+                  marginTop={messageIdx === 0 ? 0 : 1}
+                >
+                  <AgentMessageContent
+                    content={message.content}
+                    contentParts={message.contentParts}
+                  />
+                </Box>
+              ))}
+            </Box>
+          )
+        })}
         {isStreaming && (
           <Text dimColor italic>
             Agent is typing...
