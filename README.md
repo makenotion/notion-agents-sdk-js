@@ -1,214 +1,143 @@
-# @notionhq/agents-client
+# Notion Agents SDK for JavaScript (Alpha)
 
-A TypeScript SDK for interacting with Notion Custom Agents via the public API.
+A TypeScript/JavaScript SDK for interacting with Notion Agents via the Notion Agents Public API.
 
-> [!IMPORTANT]
-> **Confidentiality**
->
-> These materials are Notion Confidential Information. Use is limited to internal evaluation and development under your agreement with Notion. No redistribution or public disclosure without Notion’s prior written consent.
->
-> **Beta Services**
->
-> This Notion Agents SDK is a Beta Service, as defined in your agreement with Notion, provided “AS IS." Notion makes no representations or warranties of any kind as to the Beta Services, whether express, implied, statutory, or otherwise regarding Beta Services, including any warranty that the Beta Services will become > generally available. At its sole discretion, Notion may suspend or terminate your access to the Beta Services at any time. See the “Beta Services” section of your agreement with Notion for the governing terms.
+- Package name: `@notionhq/agents-client`
+- Runtime: Node.js (see [Requirements](#requirements))
+- Status: **Alpha**
 
-## Features
+This SDK is a thin, typed layer on top of the official Notion SDK (`@notionhq/client`). In addition to agent-specific helpers, you can call standard Notion API endpoints (pages, databases, blocks, …) through the same client instance.
 
-- Clean, type-safe wrapper around the official Notion SDK
-- `Agent` class for agent-specific operations
-- `Thread` class for managing chat threads
-- Streaming support for real-time responses
-- Built-in polling with exponential backoff
-- Pagination support for agents, threads, and messages
-- Filtering and sorting capabilities
-- Full TypeScript support
+## Contents
+
+- [Requirements](#requirements)
+- [Installation](#installation-not-on-npm-yet)
+- [Quickstart (async)](#quickstart-async)
+- [Quickstart (streaming)](#quickstart-streaming)
+- [Concepts](#concepts)
+  - [Agents: custom vs personal](#agents-custom-vs-personal)
+  - [Threads and messages](#threads-and-messages)
+- [Verbose output: `content_parts`](#verbose-output-content_parts)
+- [API reference (SDK)](#api-reference-sdk)
+- [Errors](#errors)
+- [Examples](#examples)
+
+## Requirements
+
+- **Node.js 18+** (the streaming API uses `fetch` and Web Streams)
+- **ESM**: this package is ESM-only (`"type": "module"`)
+- A Notion API token (internal integration secret or OAuth access token)
+  - Notion getting started guide: [developers.notion.com](https://developers.notion.com/guides/get-started/getting-started)
+- Alpha access & Custom Agents access
 
 ## Installation
 
+### Clone + build + install from a local path
+
+1. Clone the repository containing this SDK.
+2. Build the SDK:
+
+   ```bash
+   cd notion-agents-sdk-js
+   npm install
+   npm run build
+   ```
+
+3. In your project, install from the local path:
+
+   ```bash
+   npm install /absolute/path/to/notion-agents-sdk-js
+   ```
+
+### Alternative: build a tarball (`.tgz`) and install that
+
+If you want a single file you can share internally (e.g. attach to a GitHub Release), you can build a tarball:
+
 ```bash
-npm install @notionhq/agents-client
+cd notion-agents-sdk-js
+npm install
+npm run build
+npm pack
 ```
 
-## Quick start
+That produces a file like `notionhq-agents-client-1.0.0.tgz`, which you can install from a path or URL:
 
-```typescript
+```bash
+npm install /absolute/path/to/notionhq-agents-client-1.0.0.tgz
+# or: npm install https://host/path/notionhq-agents-client-1.0.0.tgz
+```
+
+### Environment variables
+
+Most examples assume your token is set as:
+
+```bash
+export NOTION_API_TOKEN="secret_..."
+```
+
+## Quickstart (async)
+
+The async flow returns immediately with a `thread_id`, then you poll for completion and fetch messages separately.
+
+```ts
 import { NotionAgentsClient } from "@notionhq/agents-client"
 
 const client = new NotionAgentsClient({
-  auth: process.env.NOTION_API_TOKEN,
+  auth: process.env.NOTION_API_TOKEN!,
 })
 
-// List all agents
-const agentsResponse = await client.agents.list()
-const agentData = agentsResponse.results[0]
-const agent = client.agents.agent(agentData.id)
+// Pick an agent
+const agents = await client.agents.list({ page_size: 10 })
+const agent = client.agents.agent(agents.results[0].id)
 
-// Start a chat
+// Start a conversation (returns quickly with pending status)
 const invocation = await agent.chat({ message: "Hello!" })
 
-// Get the thread and poll until completion
+// Poll until the thread is completed or failed
 const thread = agent.thread(invocation.thread_id)
-const result = await thread.poll()
+const threadInfo = await thread.poll()
+console.log(`Thread status: ${threadInfo.status}`)
 
-console.log(result.messages)
+// Fetch messages (separate endpoint)
+const messages = await thread.listMessages({ page_size: 50, verbose: true })
+for (const message of messages.results) {
+  console.log(`${message.role}: ${message.content}`)
+}
 ```
 
-## Usage
+## Quickstart (streaming)
 
-### Creating a client
+The streaming flow returns newline-delimited JSON (NDJSON) under the hood. The SDK exposes it as an async generator of parsed chunks.
 
-```typescript
-import { NotionAgentsClient } from "@notionhq/agents-client"
+```ts
+import { NotionAgentsClient, stripLangTags } from "@notionhq/agents-client"
 
 const client = new NotionAgentsClient({
-  auth: "your_api_token",
-  baseUrl: "https://api.notion.com", // optional, defaults to production
-  notionVersion: "2025-09-03", // optional
-})
-```
-
-### Personal agent
-
-The SDK provides easy access to the Personal Agent (Notion AI) using the reserved UUID.
-
-```typescript
-import { PERSONAL_AGENT_ID } from "@notionhq/agents-client"
-
-// Access the personal agent directly
-const personalAgent = client.agents.personal()
-
-// Or use the agent() method with the personal agent UUID
-const personalAgent = client.agents.agent(PERSONAL_AGENT_ID)
-
-// Chat with Notion AI
-const invocation = await personalAgent.chat({
-  message: "What's in my workspace?",
+  auth: process.env.NOTION_API_TOKEN!,
 })
 
-// Stream responses from Notion AI
-for await (const chunk of personalAgent.chatStream({
-  message: "Summarize my recent notes",
-})) {
+const agent = client.agents.personal()
+
+for await (const chunk of agent.chatStream({ message: "Summarize my week" })) {
   if (chunk.type === "message" && chunk.role === "agent") {
-    process.stdout.write(chunk.content)
+    process.stdout.write(stripLangTags(chunk.content))
+  }
+
+  if (chunk.type === "error") {
+    throw new Error(`Stream error [${chunk.code}]: ${chunk.message}`)
   }
 }
-
-// List threads with the personal agent
-const threads = await personalAgent.listThreads()
 ```
 
-The personal agent:
+### Getting the final `ThreadInfo` from `chatStream()`
 
-- Always appears first in the results from `client.agents.list()`
-- Uses a reserved UUID (available as `PERSONAL_AGENT_ID`)
-- Has full workspace search capabilities
-- Works with all agent methods (chat, chatStream, listThreads, etc.)
+`chatStream()` yields chunks as they arrive, and also returns a final value (`ThreadInfo`) when the stream ends (thread id, agent id, and the ordered, upserted messages).
 
-### Listing agents
+To capture that return value, you can iterate manually:
 
-```typescript
-// List all agents with pagination
-const agentsResponse = await client.agents.list({
-  page_size: 10,
-  start_cursor: undefined,
-})
+```ts
+const stream = agent.chatStream({ message: "Hello" })
 
-console.log(`Found ${agentsResponse.results.length} agents`)
-console.log(`Has more: ${agentsResponse.has_more}`)
-
-// The first result is always the personal agent (Notion AI) on the first page
-import { PERSONAL_AGENT_ID } from "@notionhq/agents-client"
-
-if (agentsResponse.results[0]?.id === PERSONAL_AGENT_ID) {
-  console.log("First agent is the personal agent (Notion AI)")
-}
-
-// Get an agent instance by ID
-const agent = client.agents.agent(agentsResponse.results[0].id)
-
-// Filter by name
-const salesAgents = await client.agents.list({
-  name: "Sales",
-  page_size: 5,
-})
-
-// Iterate through all agents
-import { iterateAgents } from "@notionhq/agents-client"
-
-for await (const agentData of iterateAgents(client)) {
-  console.log(agentData.name)
-}
-
-// Or collect all into an array
-import { collectAgents } from "@notionhq/agents-client"
-
-const allAgents = await collectAgents(client)
-console.log(`Total agents: ${allAgents.length}`)
-```
-
-### Chatting with agents
-
-#### Async mode
-
-```typescript
-// Get an agent instance
-const agentsResponse = await client.agents.list({ page_size: 1 })
-const agent = client.agents.agent(agentsResponse.results[0].id)
-
-// Start a new conversation
-const invocation = await agent.chat({ message: "Hello!" })
-console.log(invocation.thread_id)
-
-// Continue an existing conversation
-await agent.chat({
-  message: "Follow up question",
-  threadId: invocation.thread_id,
-})
-
-// Attach uploaded files (from the File Upload API)
-await agent.chat({
-  message: "Please review these files",
-  attachments: [{ fileUploadId: "upload_123", name: "spec.pdf" }],
-})
-
-// Attachments-only turns are supported
-await agent.chat({
-  attachments: [{ fileUploadId: "upload_123" }],
-})
-```
-
-#### Streaming mode
-
-```typescript
-import { StreamError, stripLangTags } from "@notionhq/agents-client"
-
-try {
-  for await (const chunk of agent.chatStream({ message: "Hello!" })) {
-    if (chunk.type === "message" && chunk.role === "agent") {
-      // Strip lang tags for cleaner display
-      const cleanContent = stripLangTags(chunk.content)
-      process.stdout.write(cleanContent)
-    }
-  }
-} catch (error) {
-  if (error instanceof StreamError) {
-    console.error(`Stream error [${error.code}]: ${error.message}`)
-  }
-}
-
-// Use the onMessage callback for incremental updates
-const stream = agent.chatStream({
-  message: "Hello!",
-  onMessage: (message) => {
-    if (message.role === "agent") {
-      const cleanContent = stripLangTags(message.content)
-      process.stdout.write(cleanContent)
-    }
-  },
-})
-
-// If you need the final ThreadInfo (including ordered, upserted messages by id),
-// you can manually iterate to capture the generator's return value:
 let threadInfo
 while (true) {
   const { value, done } = await stream.next()
@@ -218,415 +147,223 @@ while (true) {
   }
 }
 
-console.log(`Thread ID: ${threadInfo.thread_id}`)
-console.log(`Agent ID: ${threadInfo.agent_id}`)
-console.log(`Full conversation:`, threadInfo.messages)
+console.log(threadInfo.thread_id, threadInfo.messages.length)
 ```
 
-### Listing threads
+## Concepts
 
-```typescript
-// List threads for an agent
-const threadsResponse = await agent.listThreads({
-  page_size: 10,
-  start_cursor: undefined,
+### Agents: custom vs personal
+
+- **Custom agents** are user-created agents in a workspace. They appear in `client.agents.list()`.
+- The **personal agent** is Notion AI, addressed by a reserved UUID:
+  - Use `client.agents.personal()`, or `client.agents.agent(PERSONAL_AGENT_ID)`.
+
+### Threads and messages
+
+A chat happens inside a **thread**:
+
+- `agent.chat()` creates/continues a thread and returns `{ thread_id, status: "pending" }`.
+- `thread.poll()` checks `GET /v1/agents/:agent_id/threads?id=<thread_id>` until the thread is `completed` or `failed`.
+- `thread.listMessages()` fetches messages from `GET /v1/threads/:thread_id/messages`.
+
+Important: polling returns **thread metadata** (status/title/creator/version). Messages are fetched separately via `listMessages()`.
+
+## Verbose output: `content_parts`
+
+When available, agent messages can include a structured representation of what the agent is doing, in `content_parts`.
+
+- **Streaming**: `agent.chatStream()` includes `content_parts` by default. Pass `verbose: false` to omit it.
+- **Message listing**: `thread.listMessages({ verbose: true })` may include `content_parts` for agent messages. Pass `verbose: false` to omit it.
+
+`content_parts` is an ordered array. You can think of it as “UI-friendly structure”, while `content` remains plain text.
+
+High-level part types you may encounter:
+
+- `{ type: "text", text: string }` — model text
+- `{ type: "thinking", text: string }` — model reasoning (encrypted thinking is not surfaced)
+- `{ type: "tool_call", tool_call_id: string | null, tool_name: string, input: string, results?: ToolResult[] }` — tool invocation and any associated tool results
+- `{ type: "follow_ups", follow_ups: Array<{ label: string, message: string }> }` — suggested follow-ups
+- `{ type: "custom_agent_template_picker" }` — non-text UI state used by the agent runtime
+
+If you don’t need this level of detail, prefer `verbose: false` and use `content` only.
+
+## API reference (SDK)
+
+### Exports
+
+In addition to the core classes, the package exports:
+
+- `PERSONAL_AGENT_ID` — reserved UUID for the personal agent (Notion AI)
+- `stripLangTags(text: string): string` — removes `<lang ...>` tags from agent output
+- `isPersonalAgent(agentId: string): boolean` — checks whether an ID is the personal agent
+- Pagination helpers: `iterateAgents` / `collectAgents` / `iterateThreads` / `collectThreads` / `iterateMessages` / `collectMessages`
+- TypeScript types for requests/responses/streaming chunks (see `dist/index.d.ts` once built)
+
+### `NotionAgentsClient`
+
+```ts
+import { NotionAgentsClient } from "@notionhq/agents-client"
+
+const client = new NotionAgentsClient({
+  auth: string,                 // required
+  baseUrl?: string,             // defaults to "https://api.notion.com"
+  notionVersion?: string,       // defaults to "2025-09-03"
 })
-
-console.log(`Found ${threadsResponse.results.length} threads`)
-
-// Get a specific thread by ID (useful for polling)
-const specificThread = await agent.listThreads({
-  id: "thread_123",
-})
-
-// Filter by status
-const completedThreads = await agent.listThreads({
-  status: "completed",
-  page_size: 20,
-})
-
-// Filter by creator
-const botThreads = await agent.listThreads({
-  created_by_type: "bot",
-})
-
-// Combine filters with pagination
-const filteredThreads = await agent.listThreads({
-  status: "completed",
-  created_by_type: "bot",
-  page_size: 10,
-  start_cursor: cursor,
-})
-```
-
-### Listing thread messages
-
-```typescript
-const thread = agent.thread(threadId)
-
-// List all messages
-const messagesResponse = await thread.listMessages({
-  page_size: 20,
-})
-
-// Filter by role
-const agentMessages = await thread.listMessages({
-  role: "agent",
-  page_size: 10,
-})
-
-// Iterate through all messages
-import { iterateMessages } from "@notionhq/agents-client"
-
-for await (const message of iterateMessages(thread)) {
-  console.log(`${message.role}: ${message.content}`)
-}
-
-// Or collect all into an array
-import { collectMessages } from "@notionhq/agents-client"
-
-const allMessages = await collectMessages(thread)
-console.log(`Total messages: ${allMessages.length}`)
-```
-
-### Working with threads
-
-The `Thread` class provides a clean API for managing chat threads:
-
-```typescript
-// Create a thread reference
-const thread = agent.thread(threadId)
-
-// Get the current thread metadata (status, title, etc.)
-const threadInfo = await thread.get()
-console.log(threadInfo.status) // "pending" | "completed" | "failed"
-console.log(threadInfo.title)
-
-// Get messages separately
-const messages = await thread.listMessages({ page_size: 20 })
-console.log(messages.results)
-
-// Poll until the thread completes
-const result = await thread.poll({
-  maxAttempts: 60,
-  baseDelayMs: 1000,
-  maxDelayMs: 10000,
-  initialDelayMs: 1000,
-  onPending: (thread, attempt) => {
-    console.log(`Waiting... status: ${thread.status} (attempt ${attempt})`)
-  },
-  onThreadNotFound: (attempt) => {
-    console.log(`Thread not found yet (attempt ${attempt})`)
-  },
-})
-```
-
-### Convenience methods
-
-The `Agent` class also provides convenience methods for thread operations:
-
-```typescript
-// Get thread metadata directly
-const threadInfo = await agent.getThread(threadId)
-console.log(threadInfo.status, threadInfo.title)
-
-// Poll thread directly
-const result = await agent.pollThread(threadId, {
-  maxAttempts: 30,
-  onPending: (thread, attempt) => {
-    console.log(`Status: ${thread.status}`)
-  },
-})
-```
-
-## API reference
-
-### NotionAgentsClient
-
-Main client class extending the Notion SDK.
-
-```typescript
-const client = new NotionAgentsClient(options: ClientOptions);
-```
-
-#### ClientOptions
-
-- `auth` (required): Your Notion API token
-- `baseUrl` (optional): API base URL, defaults to `https://api.notion.com`
-- `notionVersion` (optional): Notion API version, defaults to `2025-09-03`
-
-### AgentOperations
-
-Accessed via `client.agents`.
-
-#### list(params?)
-
-Lists all accessible custom agents with pagination.
-
-```typescript
-await client.agents.list({
-  name?: string,
-  page_size?: number,
-  start_cursor?: string
-});
-```
-
-Returns: `Promise<AgentListResponse>`
-
-Response includes:
-
-- `results`: Array of agent data
-- `has_more`: Boolean indicating if more results exist
-- `next_cursor`: Cursor for the next page (null if no more results)
-
-#### agent(agentId)
-
-Creates an agent instance by ID.
-
-```typescript
-client.agents.agent(agentId: string);
-```
-
-Returns: `Agent`
-
-### Agent
-
-Represents a custom agent.
-
-#### Agent properties
-
-- `id`: Agent ID
-- `name`: Agent name
-- `instruction`: Agent instructions (nullable)
-
-#### Agent methods
-
-##### chat(args)
-
-Starts or continues a chat conversation.
-
-```typescript
-await agent.chat({
-  message?: string,
-  attachments?: Array<{ fileUploadId: string, name?: string }>,
-  threadId?: string,
-});
-```
-
-Note: You must provide either `message` or `attachments`.
-
-Returns: `Promise<ChatInvocationResponse>`
-
-##### chatStream(args)
-
-Streams a chat conversation in real-time.
-
-```typescript
-agent.chatStream({
-  message?: string,
-  attachments?: Array<{ fileUploadId: string, name?: string }>,
-  threadId?: string,
-  verbose?: boolean,
-  onMessage?: (message: StreamMessage) => void
-});
 ```
 
 Notes:
 
-- Message chunks include a stable `id`. Agent message chunks may be emitted multiple times for the same `id` as more information arrives; clients should treat them as upserts keyed by `id`.
-- User message chunks may include `attachments` (signed URLs and metadata).
-- When `verbose=true` (default), agent message chunks may include `content_parts` with structured output (thinking, tool calls/results, follow-ups).
-- When `verbose=false`, agent chunks omit `content_parts` and only return `content`.
+- Extends `@notionhq/client`’s `Client`, so you can also call `client.pages`, `client.databases`, etc.
+- Adds `client.agents` for agent-specific operations.
 
-Returns: `AsyncGenerator<StreamChunk, ThreadInfo, undefined>`
+### `client.agents` (`AgentOperations`)
 
-##### thread(threadId)
+#### `list(params?)`
 
-Creates a thread reference.
+Lists all accessible agents (including the personal agent on the first page).
 
-```typescript
-agent.thread(threadId: string);
-```
-
-Returns: `Thread`
-
-##### getThread(threadId)
-
-Convenience method to get thread metadata.
-
-```typescript
-await agent.getThread(threadId: string);
-```
-
-Returns: `Promise<ThreadListItem>`
-
-##### pollThread(threadId, options?)
-
-Convenience method to poll thread until completion.
-
-```typescript
-await agent.pollThread(threadId: string, options?: PollThreadOptions);
-```
-
-Returns: `Promise<ThreadListItem>`
-
-##### listThreads(params?)
-
-Lists threads for the agent with pagination and filtering.
-
-```typescript
-await agent.listThreads({
-  id?: string,
-  title?: string,
-  status?: "pending" | "completed" | "failed",
-  created_by_type?: "user" | "bot",
-  created_by_id?: string,
+```ts
+await client.agents.list({
+  name?: string,
   page_size?: number,
-  start_cursor?: string
-});
+  start_cursor?: string,
+})
 ```
 
-Returns: `Promise<ThreadListResponse>`
+Returns `Promise<AgentListResponse>`.
 
-### Thread
+#### `agent(agentId)`
 
-Represents a chat thread.
+Creates an `Agent` instance:
 
-#### Thread properties
-
-- `threadId`: Thread ID
-- `agentId`: Associated agent ID
-
-#### Thread methods
-
-##### get()
-
-Retrieves the current thread metadata (status, title, created_by).
-
-```typescript
-await thread.get()
+```ts
+const agent = client.agents.agent(agentId)
 ```
 
-Returns: `Promise<ThreadListItem>`
+#### `personal()`
 
-##### poll(options?)
+Convenience accessor for the personal agent:
 
-Polls the thread until completion with exponential backoff.
-
-```typescript
-await thread.poll(options?: PollThreadOptions);
+```ts
+const personal = client.agents.personal()
 ```
 
-Returns: `Promise<ThreadListItem>`
+### `Agent`
 
-##### listMessages(params?)
+An `Agent` represents a single agent (custom or personal).
 
-Lists messages in the thread with pagination and filtering.
+#### `chat(args)`
 
-```typescript
+Starts or continues a conversation (async invocation).
+
+```ts
+await agent.chat({
+  message?: string,
+  attachments?: Array<{ fileUploadId: string, name?: string }>,
+  threadId?: string,
+})
+```
+
+You must provide either a non-empty `message` or at least one `attachment`.
+
+Attachments must reference files uploaded via the Notion **File Upload API**. The agent runtime may surface attachments back to you as signed URLs (with an `expiry_time`) in user message chunks and in `listMessages()` responses.
+
+Returns `Promise<ChatInvocationResponse>`.
+
+#### `chatStream(args)`
+
+Starts or continues a conversation (streaming). Yields `StreamChunk` objects as they arrive.
+
+```ts
+const stream = agent.chatStream({
+  message?: string,
+  attachments?: Array<{ fileUploadId: string, name?: string }>,
+  threadId?: string,
+  verbose?: boolean, // default true
+  onMessage?: (message: StreamMessage) => void,
+})
+```
+
+Notes:
+
+- Agent message chunks may be emitted multiple times for the same `id` as more information becomes available; treat them as **upserts keyed by `id`**.
+- When `verbose: false`, agent message chunks omit `content_parts` and only return `content`.
+
+Returns `AsyncGenerator<StreamChunk, ThreadInfo, undefined>`.
+
+#### Threads
+
+```ts
+const thread = agent.thread(threadId)
+await agent.getThread(threadId)      // == agent.thread(threadId).get()
+await agent.pollThread(threadId)     // == agent.thread(threadId).poll()
+await agent.listThreads({...})       // list/paginate/filter threads
+```
+
+### `Thread`
+
+#### `get()`
+
+Fetches thread metadata:
+
+```ts
+const threadInfo = await thread.get()
+```
+
+Returns `Promise<ThreadListItem>`.
+
+#### `poll(options?)`
+
+Polls until the thread is `completed` or `failed`, with exponential backoff:
+
+```ts
+await thread.poll({
+  maxAttempts?: number,      // default 60
+  baseDelayMs?: number,      // default 1000
+  maxDelayMs?: number,       // default 10000
+  initialDelayMs?: number,   // default 1000
+  onPending?: (thread, attempt) => void,
+  onThreadNotFound?: (attempt) => void,
+})
+```
+
+Returns `Promise<ThreadListItem>`. Throws `PollingTimeoutError` if attempts are exceeded.
+
+#### `listMessages(params?)`
+
+Lists messages in a thread:
+
+```ts
 await thread.listMessages({
-  verbose?: boolean,
+  verbose?: boolean,               // default true
   role?: "user" | "agent",
   page_size?: number,
-  start_cursor?: string
-});
+  start_cursor?: string,
+})
 ```
 
-Returns: `Promise<ThreadMessageListResponse>`
+Returns `Promise<ThreadMessageListResponse>`.
 
-Note: When available, messages may include `attachments` (user messages) and `content_parts` (agent messages, when `verbose=true`).
+### Pagination helpers
 
-#### PollThreadOptions
+The SDK exports pagination helpers that automatically manage `start_cursor`:
 
-- `maxAttempts` (default: 60): Maximum polling attempts
-- `baseDelayMs` (default: 1000): Base delay between attempts
-- `maxDelayMs` (default: 10000): Maximum delay between attempts
-- `initialDelayMs` (default: 1000): Initial delay before first attempt
-- `onPending`: Callback when thread is pending
-- `onThreadNotFound`: Callback when thread is not found
-
-## Utilities
-
-### `stripLangTags`
-
-Removes `<lang>` XML tags from text. Useful for cleaning up agent responses for display in terminals, UIs, or other contexts where language metadata tags aren't needed.
-
-```typescript
-import { stripLangTags } from "@notionhq/agents-client"
-
-const raw = '<lang primary="en-US"/>Hello world'
-const clean = stripLangTags(raw)
-// Returns: "Hello world"
+```ts
+import {
+  iterateAgents,
+  collectAgents,
+  iterateThreads,
+  collectThreads,
+  iterateMessages,
+  collectMessages,
+} from "@notionhq/agents-client"
 ```
 
-### `isPersonalAgent`
+## Errors
 
-Checks if an agent ID represents the Personal Agent (Notion AI).
+The SDK provides error classes for common scenarios:
 
-```typescript
-import { isPersonalAgent } from "@notionhq/agents-client"
-
-const agentsResponse = await client.agents.list()
-const firstAgent = agentsResponse.results[0]
-
-if (isPersonalAgent(firstAgent.id)) {
-  console.log("This is the Notion AI assistant")
-}
-```
-
-### `iterateAgents` / `collectAgents`
-
-```typescript
-import { iterateAgents, collectAgents } from "@notionhq/agents-client"
-
-// Iterate through all agents
-for await (const agent of iterateAgents(client)) {
-  console.log(agent.name)
-}
-
-// Collect all agents into an array
-const allAgents = await collectAgents(client, { name: "Sales" })
-```
-
-### `iterateThreads` / `collectThreads`
-
-```typescript
-import { iterateThreads, collectThreads } from "@notionhq/agents-client"
-
-const agent = client.agents.agent(agentId)
-
-// Iterate through all threads
-for await (const thread of iterateThreads(agent, { status: "completed" })) {
-  console.log(thread.title)
-}
-
-// Collect all threads into an array
-const allThreads = await collectThreads(agent)
-```
-
-### `iterateMessages` / `collectMessages`
-
-```typescript
-import { iterateMessages, collectMessages } from "@notionhq/agents-client"
-
-const thread = agent.thread(threadId)
-
-// Iterate through all messages
-for await (const message of iterateMessages(thread, { role: "agent" })) {
-  console.log(message.content)
-}
-
-// Collect all messages into an array
-const allMessages = await collectMessages(thread)
-```
-
-**Note:** All pagination helpers automatically handle cursor management, making it easier to work with large result sets.
-
-## Error handling
-
-The SDK provides specific error classes for different failure scenarios:
-
-```typescript
+```ts
 import {
   NotionAgentsError,
   AgentNotFoundError,
@@ -634,119 +371,28 @@ import {
   PollingTimeoutError,
   StreamError,
 } from "@notionhq/agents-client"
-
-try {
-  const agent = client.agents.agent("invalid_id")
-  await agent.chat({ message: "Hello" })
-} catch (error) {
-  if (error instanceof AgentNotFoundError) {
-    console.error(`Agent ${error.agentId} not found`)
-  } else if (error instanceof ThreadNotFoundError) {
-    console.error(`Thread ${error.threadId} not found`)
-  } else if (error instanceof PollingTimeoutError) {
-    console.error(`Polling timed out after ${error.attempts} attempts`)
-  } else if (error instanceof StreamError) {
-    console.error(`Stream error [${error.code}]: ${error.message}`)
-  } else if (error instanceof NotionAgentsError) {
-    console.error(`Agents error [${error.code}]: ${error.message}`)
-  } else {
-    throw error
-  }
-}
 ```
 
-### Error classes
+- `AgentNotFoundError`: thrown when an agent is missing/inaccessible for certain SDK calls.
+- `ThreadNotFoundError`: thrown when a thread cannot be found via the thread listing endpoint.
+- `PollingTimeoutError`: thrown when `poll()` exceeds `maxAttempts`.
+- `StreamError`: thrown for streaming-specific failures (HTTP errors, missing body, malformed stream).
 
-All SDK errors extend `NotionAgentsError`, which provides:
+Streaming can also produce `chunk.type === "error"` with a machine-readable `code` and a message; handle both patterns.
 
-- `message`: Human-readable error message
-- `code`: Machine-readable error code
-- `name`: Error class name
+## Examples
 
-**Specific errors:**
+See `examples/README.md` for runnable scripts:
 
-- **`AgentNotFoundError`**: Agent doesn't exist or isn't accessible
-  - Additional property: `agentId`
-- **`ThreadNotFoundError`**: Thread doesn't exist or isn't accessible
-  - Additional property: `threadId`
-- **`PollingTimeoutError`**: Thread polling exceeded max attempts
-  - Additional property: `attempts`
-- **`StreamError`**: Error occurred during streaming
-  - Common error codes:
-    - `http_error`: HTTP request failed (non-200 status)
-    - `missing_response_body`: Server response missing body
-    - `invalid_stream_response`: Malformed stream data
-    - `internal_server_error`, `rate_limited`, `unauthorized`, etc.: API-level errors
+- `examples/basic-usage.ts` — async chat + polling + message fetch
+- `examples/streaming.ts` — streaming chunks + incremental display
+- `examples/personal-agent.ts` — using the personal agent
+- `examples/pagination.ts` — iterators/collectors for pagination
 
-## Environment setup
-
-Create a `.env` file:
+To run examples from the SDK repo:
 
 ```bash
-NOTION_API_TOKEN=your_token_here
-```
-
-Then in your code:
-
-```typescript
-import dotenv from "dotenv"
-dotenv.config()
-
-const client = new NotionAgentsClient({
-  auth: process.env.NOTION_API_TOKEN,
-})
-```
-
-## Development
-
-### Running tests
-
-```bash
-# Run all tests
-npm test
-
-# Watch mode
-npm run test:watch
-
-# Coverage report
-npm run test:coverage
-```
-
-See [README.test.md](./README.test.md) for the full testing guide.
-
-### Building
-
-```bash
+npm install
 npm run build
+npx tsx examples/basic-usage.ts
 ```
-
-### Type checking
-
-```bash
-# Typecheck source code
-npm run typecheck
-
-# Typecheck examples
-npm run typecheck:examples
-```
-
-## Prerequisites
-
-- Custom agents feature enabled for your workspace
-- Bot token from an internal integration or public integration
-- Minimum capabilities: "Read content", "Insert content"
-
-## Getting a bot token
-
-### Internal integration (recommended)
-
-1. In Notion: Settings & members → Connections → Develop or manage integrations
-2. Click "New integration" → "Internal integration"
-3. Set name and capabilities
-4. Copy the "Internal Integration Secret"
-
-### Public integration
-
-1. Create a public integration at <https://www.notion.so/my-integrations>
-2. Complete OAuth authorization flow
-3. Use the access token
