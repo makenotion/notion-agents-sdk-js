@@ -11,7 +11,7 @@ This SDK is a thin, typed layer on top of the official Notion SDK (`@notionhq/cl
 ## Contents
 
 - [Requirements](#requirements)
-- [Installation](#installation-not-on-npm-yet)
+- [Installation](#installation)
 - [Quickstart (async)](#quickstart-async)
 - [Quickstart (streaming)](#quickstart-streaming)
 - [Concepts](#concepts)
