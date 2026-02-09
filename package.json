@@ -26,7 +26,7 @@
   "keywords": [],
   "author": "Notion Labs, Inc.",
   "dependencies": {
-    "@notionhq/client": "5.4.0",
+    "@notionhq/client": "5.9.0",
     "dotenv": "17.2.3"
   },
   "devDependencies": {
