@@ -1,3 +1,5 @@
+import { APIErrorCode, APIResponseError } from "@notionhq/client"
+
 export class NotionAgentsError extends Error {
   public readonly code: string
 
@@ -61,6 +63,10 @@ type NotionApiErrorLike = {
 export type NotionApiObjectType = "agent" | "thread"
 
 function getErrorCode(error: unknown): string | undefined {
+  if (APIResponseError.isAPIResponseError(error)) {
+    return error.code
+  }
+
   if (error && typeof error === "object" && "code" in error) {
     const code = (error as NotionApiErrorLike).code
     if (typeof code === "string") {
@@ -98,7 +104,7 @@ export function isObjectNotFoundErrorForType(
   objectType: NotionApiObjectType,
 ): boolean {
   const code = getErrorCode(error)
-  if (code !== "object_not_found") {
+  if (code !== APIErrorCode.ObjectNotFound) {
     return false
   }
 
