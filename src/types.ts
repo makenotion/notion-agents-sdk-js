@@ -43,7 +43,9 @@ export type AgentData = {
   object: "agent"
   id: string
   name: string
+  description: string | null
   instruction: string | null
+  instructions_page_id: string | null
   icon: AgentIcon | null
   version: AgentVersion | null
 }
