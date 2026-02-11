@@ -2,13 +2,11 @@
 
 A TypeScript/JavaScript SDK for interacting with Notion Agents via the Notion Agents Public API.
 
-- Package name: `@notionhq/agents-client`
-- Runtime: Node.js (see [Requirements](#requirements))
-- Status: **Alpha**
-
-This SDK is a thin, typed layer on top of the official Notion SDK (`@notionhq/client`). In addition to agent-specific helpers, you can call standard Notion API endpoints (pages, databases, blocks, …) through the same client instance.
+Status: **Alpha**
 
 > **Notion Agents API reference**: [developers.notion.com/reference/internal/list-agents](https://developers.notion.com/reference/internal/list-agents)
+
+This SDK is a thin, typed layer on top of the official Notion SDK (`@notionhq/client`). In addition to agent-specific helpers, you can call standard Notion API endpoints (pages, databases, blocks, …) through the same client instance.
 
 ## Contents
 
