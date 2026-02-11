@@ -6,7 +6,7 @@ import {
   mockThreadListItem,
   mockThreadMessageListResponse,
   mockThreadMessageItem,
-  mockThreadNotFound,
+  mockValidationError,
 } from "./test-utils/index.js"
 
 describe("Thread", () => {
@@ -222,7 +222,7 @@ describe("Thread", () => {
       const mockClient = createMockClient(async () => {
         callCount++
         if (callCount < 3) {
-          throw mockThreadNotFound("thread_456")
+          return mockThreadListResponse({ results: [] })
         }
         return mockThreadListResponse({
           results: [mockThreadListItem({ status: "completed" })],
@@ -249,6 +249,33 @@ describe("Thread", () => {
 
       expect(result.status).toBe("completed")
       expect(onThreadNotFound).toHaveBeenCalledTimes(2)
+    })
+
+    it("should not treat validation_error as thread not found", async () => {
+      const mockClient = createMockClient(async () => {
+        throw mockValidationError("Thread does not belong to this agent")
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      const onThreadNotFound = vi.fn()
+
+      await expect(
+        thread.poll({
+          maxAttempts: 10,
+          initialDelayMs: 0,
+          onThreadNotFound,
+        }),
+      ).rejects.toMatchObject({
+        code: "validation_error",
+        message: "Thread does not belong to this agent",
+      })
+
+      expect(onThreadNotFound).not.toHaveBeenCalled()
     })
   })
 })

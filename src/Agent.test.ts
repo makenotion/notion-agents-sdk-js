@@ -8,6 +8,8 @@ import {
   mockStreamResponse,
   mockHTTPErrorResponse,
   mockAgentNotFound,
+  mockThreadNotFound,
+  mockValidationError,
 } from "./test-utils/index.js"
 import {
   StreamChunk,
@@ -15,7 +17,7 @@ import {
   ThreadInfo,
   PERSONAL_AGENT_ID,
 } from "./types.js"
-import { StreamError } from "./errors.js"
+import { AgentNotFoundError, StreamError, ThreadNotFoundError } from "./errors.js"
 
 describe("Agent", () => {
   let mockFetch: ReturnType<typeof vi.fn>
@@ -100,6 +102,47 @@ describe("Agent", () => {
       await expect(agent.chat({ message: "Hello" })).rejects.toThrow(
         "Agent invalid_agent not found",
       )
+    })
+
+    it("should not throw AgentNotFoundError for validation_error", async () => {
+      const mockClient = createMockClient(async () => {
+        throw mockValidationError("Agent is not published or configured.")
+      })
+
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      try {
+        await agent.chat({ message: "Hello" })
+        throw new Error("Should have thrown")
+      } catch (error) {
+        expect(error).not.toBeInstanceOf(AgentNotFoundError)
+        expect(error).toMatchObject({
+          code: "validation_error",
+          message: "Agent is not published or configured.",
+        })
+      }
+    })
+
+    it("should throw ThreadNotFoundError when threadId doesn't exist", async () => {
+      const mockClient = createMockClient(async () => {
+        throw mockThreadNotFound("thread_456")
+      })
+
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      await expect(
+        agent.chat({ message: "Hello", threadId: "thread_456" }),
+      ).rejects.toBeInstanceOf(ThreadNotFoundError)
     })
 
     it("should continue an existing chat with threadId", async () => {

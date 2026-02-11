@@ -7,7 +7,11 @@ import type {
   ThreadListResponse,
   ThreadListItem,
 } from "./types.js"
-import { ThreadNotFoundError, PollingTimeoutError } from "./errors.js"
+import {
+  ThreadNotFoundError,
+  PollingTimeoutError,
+  isObjectNotFoundErrorForType,
+} from "./errors.js"
 
 export class Thread {
   public readonly threadId: string
@@ -75,16 +79,8 @@ export class Thread {
         onPending?.(thread, attempt)
       } catch (error) {
         if (
-          error &&
-          typeof error === "object" &&
-          "code" in error &&
-          (error.code === "validation_error" ||
-            error.code === "object_not_found")
-        ) {
-          onThreadNotFound?.(attempt)
-        } else if (
-          error instanceof Error &&
-          error.message.includes("not found")
+          error instanceof ThreadNotFoundError ||
+          isObjectNotFoundErrorForType(error, "thread")
         ) {
           onThreadNotFound?.(attempt)
         } else {

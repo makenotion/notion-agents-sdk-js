@@ -11,7 +11,13 @@ import type {
   ThreadListResponse,
   ThreadListItem,
 } from "./types.js"
-import { StreamError, AgentNotFoundError, NotionAgentsError } from "./errors.js"
+import {
+  StreamError,
+  AgentNotFoundError,
+  NotionAgentsError,
+  ThreadNotFoundError,
+  isObjectNotFoundErrorForType,
+} from "./errors.js"
 
 export class Agent {
   public readonly id: string
@@ -87,6 +93,9 @@ export class Agent {
       if (this.isAgentNotFoundError(error)) {
         throw new AgentNotFoundError(this.id)
       }
+      if (args.threadId && isObjectNotFoundErrorForType(error, "thread")) {
+        throw new ThreadNotFoundError(args.threadId)
+      }
       throw error
     }
   }
@@ -141,12 +150,7 @@ export class Agent {
       return false
     }
 
-    return (
-      error !== null &&
-      typeof error === "object" &&
-      "code" in error &&
-      (error.code === "object_not_found" || error.code === "validation_error")
-    )
+    return isObjectNotFoundErrorForType(error, "agent")
   }
 
   chatStream(args: {
