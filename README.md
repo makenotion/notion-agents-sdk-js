@@ -157,6 +157,7 @@ console.log(threadInfo.thread_id, threadInfo.messages.length)
 - **Custom agents** are user-created agents in a workspace. They appear in `client.agents.list()`.
 - The **personal agent** is Notion AI, addressed by a reserved UUID:
   - Use `client.agents.personal()`, or `client.agents.agent(PERSONAL_AGENT_ID)`.
+  - Note: internal integrations (space guest bots) can’t access the personal agent. It won’t appear in `client.agents.list()`, and requests targeting it will fail with `object_not_found`.
 
 ### Threads and messages
 
@@ -220,7 +221,7 @@ Notes:
 
 #### `list(params?)`
 
-Lists all accessible agents (including the personal agent on the first page).
+Lists all accessible agents (including the personal agent on the first page when accessible).
 
 ```ts
 await client.agents.list({
