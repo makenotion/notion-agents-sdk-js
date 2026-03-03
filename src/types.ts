@@ -188,6 +188,7 @@ export type ThreadListItem = {
   id: string
   title: string
   status: ThreadStatus
+  error?: string
   created_by: {
     id: string
     type: "user" | "bot"
