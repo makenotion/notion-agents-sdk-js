@@ -76,6 +76,8 @@ export const mockThreadListItem = (
   id: "thread_456",
   title: "Test Thread",
   status: "completed",
+  created_time: "2025-06-15T12:00:00.000Z",
+  last_edited_time: "2025-07-20T15:30:00.000Z",
   created_by: {
     id: "user_789",
     type: "bot",
@@ -102,6 +104,7 @@ export const mockThreadMessageItem = (
   id: "msg_123",
   role: "user",
   content: "Hello",
+  created_time: "2025-07-20T15:30:00.000Z",
   parent: {
     type: "thread",
     id: "thread_456",
