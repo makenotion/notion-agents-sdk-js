@@ -48,6 +48,8 @@ export type AgentData = {
   instructions_page_id: string | null
   icon: AgentIcon | null
   version: AgentVersion | null
+  created_time?: string
+  last_edited_time?: string
 }
 
 export type ThreadMessage = {
@@ -188,6 +190,8 @@ export type ThreadListItem = {
   id: string
   title: string
   status: ThreadStatus
+  created_time: string
+  last_edited_time: string
   error?: string
   created_by: {
     id: string
@@ -218,6 +222,7 @@ export type ThreadMessageItem = {
   id: string
   role: "user" | "agent"
   content: string
+  created_time: string
   parent: ThreadMessageParent
   attachments?: ThreadMessageAttachment[]
   content_parts?: AgentContentPart[]
