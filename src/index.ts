@@ -25,6 +25,8 @@ export type {
   FileUrl,
   CustomEmoji,
   CustomAgentAvatar,
+  NoticonIconColor,
+  NoticonIcon,
   AgentIcon,
   AgentData,
   ChatAttachmentInput,

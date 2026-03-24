@@ -29,6 +29,23 @@ export type CustomAgentAvatar = {
   animated_url: string
 }
 
+export type NoticonIconColor =
+  | "gray"
+  | "lightgray"
+  | "brown"
+  | "yellow"
+  | "orange"
+  | "green"
+  | "blue"
+  | "purple"
+  | "pink"
+  | "red"
+
+export type NoticonIcon = {
+  name: string
+  color: NoticonIconColor
+}
+
 export type AgentIcon =
   | { type: "emoji"; emoji: string }
   | { type: "file"; file: FileUrl }
@@ -38,6 +55,7 @@ export type AgentIcon =
       type: "custom_agent_avatar"
       custom_agent_avatar: CustomAgentAvatar
     }
+  | { type: "icon"; icon: NoticonIcon }
 
 export type AgentData = {
   object: "agent"
