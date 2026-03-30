@@ -1,4 +1,4 @@
-import { NotionAgentsClient, isPersonalAgent } from "../dist/index.js"
+import { NotionAgentsClient } from "../dist/index.js"
 import * as dotenv from "dotenv"
 
 dotenv.config()
@@ -29,11 +29,6 @@ async function main() {
   }
 
   const agentData = agentsResponse.results[0]
-
-  // Note: The first agent is always the personal agent (Notion AI) on the first page
-  if (isPersonalAgent(agentData.id)) {
-    console.log(`First agent is the personal agent: ${agentData.name}`)
-  }
 
   const agent = client.agents.agent(agentData.id)
   console.log(`\nChatting with: ${agentData.name}`)

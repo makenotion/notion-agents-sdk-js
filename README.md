@@ -15,7 +15,6 @@ This SDK is a thin, typed layer on top of the official Notion SDK (`@notionhq/cl
 - [Quickstart (async)](#quickstart-async)
 - [Quickstart (streaming)](#quickstart-streaming)
 - [Concepts](#concepts)
-  - [Agents: custom vs personal](#agents-custom-vs-personal)
   - [Threads and messages](#threads-and-messages)
 - [Verbose output: `content_parts`](#verbose-output-content_parts)
 - [API reference (SDK)](#api-reference-sdk)
@@ -26,9 +25,11 @@ This SDK is a thin, typed layer on top of the official Notion SDK (`@notionhq/cl
 
 - **Node.js 18+** (the streaming API uses `fetch` and Web Streams)
 - **ESM**: this package is ESM-only (`"type": "module"`)
-- A Notion API token (internal integration secret or OAuth access token)
+- A Notion API token (internal integration secret)
   - Notion getting started guide: [developers.notion.com](https://developers.notion.com/guides/get-started/getting-started)
 - Alpha access & Custom Agents access
+
+This SDK supports custom agents via internal integrations. Personal agent and public integration access are not supported.
 
 ## Installation
 
@@ -116,7 +117,8 @@ const client = new NotionAgentsClient({
   auth: process.env.NOTION_API_TOKEN!,
 })
 
-const agent = client.agents.personal()
+const agents = await client.agents.list({ page_size: 10 })
+const agent = client.agents.agent(agents.results[0].id)
 
 for await (const chunk of agent.chatStream({ message: "Summarize my week" })) {
   if (chunk.type === "message" && chunk.role === "agent") {
@@ -151,13 +153,6 @@ console.log(threadInfo.thread_id, threadInfo.messages.length)
 ```
 
 ## Concepts
-
-### Agents: custom vs personal
-
-- **Custom agents** are user-created agents in a workspace. They appear in `client.agents.list()`.
-- The **personal agent** is Notion AI, addressed by a reserved UUID:
-  - Use `client.agents.personal()`, or `client.agents.agent(PERSONAL_AGENT_ID)`.
-  - Note: internal integrations can’t access the personal agent, since internal integrations are generally owned by workspace owners rather than any specific user. The standard agent won’t appear in `client.agents.list()`, and requests targeting it will fail with `object_not_found`.
 
 ### Threads and messages
 
@@ -194,9 +189,7 @@ If you don’t need this level of detail, prefer `verbose: false` and use `conte
 
 In addition to the core classes, the package exports:
 
-- `PERSONAL_AGENT_ID` — reserved UUID for the personal agent (Notion AI)
 - `stripLangTags(text: string): string` — removes `<lang ...>` tags from agent output
-- `isPersonalAgent(agentId: string): boolean` — checks whether an ID is the personal agent
 - Pagination helpers: `iterateAgents` / `collectAgents` / `iterateThreads` / `collectThreads` / `iterateMessages` / `collectMessages`
 - TypeScript types for requests/responses/streaming chunks (see `dist/index.d.ts` once built)
 
@@ -221,7 +214,7 @@ Notes:
 
 #### `list(params?)`
 
-Lists all accessible agents (including the personal agent on the first page when accessible).
+Lists all accessible agents.
 
 ```ts
 await client.agents.list({
@@ -241,17 +234,9 @@ Creates an `Agent` instance:
 const agent = client.agents.agent(agentId)
 ```
 
-#### `personal()`
-
-Convenience accessor for the personal agent:
-
-```ts
-const personal = client.agents.personal()
-```
-
 ### `Agent`
 
-An `Agent` represents a single agent (custom or personal).
+An `Agent` represents a single custom agent.
 
 #### `chat(args)`
 
@@ -387,7 +372,6 @@ See `examples/README.md` for runnable scripts:
 
 - `examples/basic-usage.ts` — async chat + polling + message fetch
 - `examples/streaming.ts` — streaming chunks + incremental display
-- `examples/personal-agent.ts` — using the personal agent
 - `examples/pagination.ts` — iterators/collectors for pagination
 
 To run examples from the SDK repo:
