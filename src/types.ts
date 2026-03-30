@@ -217,8 +217,6 @@ export type ThreadListParams = PaginationParams & {
   id?: string
   title?: string
   status?: ThreadStatus
-  created_by_type?: "user" | "bot"
-  created_by_id?: string
 }
 
 export type ThreadMessageParent = {

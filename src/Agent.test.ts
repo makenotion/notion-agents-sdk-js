@@ -252,32 +252,6 @@ describe("Agent", () => {
       expect(result.results[0].status).toBe("completed")
     })
 
-    it("should filter threads by creator", async () => {
-      const mockResponse = mockThreadListResponse()
-
-      const mockClient = createMockClient(async ({ query }) => {
-        expect(query).toEqual({
-          created_by_type: "bot",
-          created_by_id: "bot_123",
-        })
-        return mockResponse
-      })
-
-      const agent = new Agent({
-        client: mockClient,
-        id: "agent_123",
-        name: "Test Agent",
-        instruction: null,
-        baseUrl: "https://api.notion.com",
-        auth: "test_token",
-      })
-
-      await agent.listThreads({
-        created_by_type: "bot",
-        created_by_id: "bot_123",
-      })
-    })
-
     it("should filter threads by id", async () => {
       const mockResponse = mockThreadListResponse({
         results: [mockThreadListItem({ id: "thread_specific" })],

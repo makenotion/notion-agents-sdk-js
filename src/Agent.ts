@@ -126,8 +126,6 @@ export class Agent {
     if (params?.id) query.id = params.id
     if (params?.title) query.title = params.title
     if (params?.status) query.status = params.status
-    if (params?.created_by_type) query.created_by_type = params.created_by_type
-    if (params?.created_by_id) query.created_by_id = params.created_by_id
     if (params?.start_cursor) query.start_cursor = params.start_cursor
     if (params?.page_size) query.page_size = params.page_size
 
