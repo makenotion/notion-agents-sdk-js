@@ -26,8 +26,8 @@ export function stripLangTags(text: string): string {
 }
 
 /**
- * @deprecated Personal agent access is unsupported in the launch SDK
- * surface and should not be used for new integrations.
+ * @deprecated Personal agent access is unsupported and should not be
+ * used for new integrations.
  */
 export function isPersonalAgent(agentId: string): boolean {
   return agentId === PERSONAL_AGENT_ID

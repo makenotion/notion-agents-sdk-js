@@ -47,8 +47,8 @@ export class AgentOperations {
   }
 
   /**
-   * @deprecated Personal agent access is unsupported in the launch SDK
-   * surface and should not be used for new integrations.
+   * @deprecated Personal agent access is unsupported and should not be
+   * used for new integrations.
    */
   personal(): Agent {
     return this.agent(PERSONAL_AGENT_ID)
