@@ -1,6 +1,15 @@
 export type ThreadStatus = "pending" | "completed" | "failed"
 
+/**
+ * @deprecated Personal agent access is unsupported in the launch SDK
+ * surface and should not be used for new integrations.
+ */
 export const PERSONAL_AGENT_ID = "33333333-3333-3333-3333-333333333333" as const
+
+/**
+ * @deprecated Personal agent access is unsupported in the launch SDK
+ * surface and should not be used for new integrations.
+ */
 export type PersonalAgentId = typeof PERSONAL_AGENT_ID
 
 export type AgentVersion = {

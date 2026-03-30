@@ -42,7 +42,7 @@ async function main() {
       console.log(`    Number: ${agent.version.number}`)
       console.log(`    Published At: ${agent.version.published_at}`)
     } else {
-      console.log(`  Version: null (unpublished or personal agent)`)
+      console.log(`  Version: null (no published version metadata)`)
     }
     console.log()
   }
@@ -73,7 +73,7 @@ async function main() {
         console.log(`    Number: ${thread.agent_version.number}`)
         console.log(`    Published At: ${thread.agent_version.published_at}`)
       } else {
-        console.log(`  Agent Version: null (used unpublished version or personal agent)`)
+        console.log(`  Agent Version: null (no version metadata recorded)`)
       }
       console.log()
     }

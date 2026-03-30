@@ -11,12 +11,7 @@ import {
   mockThreadNotFound,
   mockValidationError,
 } from "./test-utils/index.js"
-import {
-  StreamChunk,
-  StreamMessage,
-  ThreadInfo,
-  PERSONAL_AGENT_ID,
-} from "./types.js"
+import { StreamChunk, StreamMessage, ThreadInfo } from "./types.js"
 import { AgentNotFoundError, StreamError, ThreadNotFoundError } from "./errors.js"
 
 describe("Agent", () => {
@@ -57,34 +52,6 @@ describe("Agent", () => {
       const result = await agent.chat({ message: "Hello" })
 
       expect(result).toEqual(mockResponse)
-    })
-
-    it("should work with personal agent", async () => {
-      const mockResponse = mockChatInvocation({
-        agent_id: PERSONAL_AGENT_ID,
-        thread_id: "thread_789",
-      })
-
-      const mockClient = createMockClient(async ({ path, method, body }) => {
-        expect(path).toBe(`agents/${PERSONAL_AGENT_ID}/chat`)
-        expect(method).toBe("post")
-        expect(body).toEqual({ message: "Hello Notion AI" })
-        return mockResponse
-      })
-
-      const agent = new Agent({
-        client: mockClient,
-        id: PERSONAL_AGENT_ID,
-        name: "Notion AI",
-        instruction: null,
-        baseUrl: "https://api.notion.com",
-        auth: "test_token",
-      })
-
-      const result = await agent.chat({ message: "Hello Notion AI" })
-
-      expect(result).toEqual(mockResponse)
-      expect(result.agent_id).toBe(PERSONAL_AGENT_ID)
     })
 
     it("should throw AgentNotFoundError when agent doesn't exist", async () => {
@@ -259,32 +226,6 @@ describe("Agent", () => {
       expect(result.results).toHaveLength(2)
       expect(result.has_more).toBe(true)
       expect(result.next_cursor).toBe("cursor_123")
-    })
-
-    it("should list threads for personal agent", async () => {
-      const mockResponse = mockThreadListResponse({
-        results: [mockThreadListItem({ id: "thread_personal", title: "Chat" })],
-      })
-
-      const mockClient = createMockClient(async ({ path, method }) => {
-        expect(path).toBe(`agents/${PERSONAL_AGENT_ID}/threads`)
-        expect(method).toBe("get")
-        return mockResponse
-      })
-
-      const agent = new Agent({
-        client: mockClient,
-        id: PERSONAL_AGENT_ID,
-        name: "Notion AI",
-        instruction: null,
-        baseUrl: "https://api.notion.com",
-        auth: "test_token",
-      })
-
-      const result = await agent.listThreads()
-
-      expect(result.results).toHaveLength(1)
-      expect(result.results[0].id).toBe("thread_personal")
     })
 
     it("should filter threads by status", async () => {
@@ -475,60 +416,6 @@ describe("Agent", () => {
 
       expect(mockFetch).toHaveBeenCalledWith(
         "https://api.notion.com/v1/agents/agent_123/chatStream",
-        expect.objectContaining({
-          method: "POST",
-          headers: expect.objectContaining({
-            Authorization: "Bearer test_token",
-          }),
-        }),
-      )
-    })
-
-    it("should stream chat responses for personal agent", async () => {
-      const chunks = [
-        `{"type":"started","thread_id":"thread_456","agent_id":"${PERSONAL_AGENT_ID}"}\n`,
-        '{"type":"message","id":"msg_user_1","role":"user","content":"Hello Notion AI"}\n',
-        '{"type":"message","id":"msg_agent_1","role":"agent","content":"Hello! How can I help?"}\n',
-        '{"type":"done","thread_id":"thread_456"}\n',
-      ]
-
-      mockFetch.mockResolvedValue(mockStreamResponse(chunks))
-
-      const mockClient = createMockClient(vi.fn())
-
-      const agent = new Agent({
-        client: mockClient,
-        id: PERSONAL_AGENT_ID,
-        name: "Notion AI",
-        instruction: null,
-        baseUrl: "https://api.notion.com",
-        auth: "test_token",
-      })
-
-      const messages: StreamMessage[] = []
-
-      const generator = agent.chatStream({
-        message: "Hello Notion AI",
-        onMessage: (msg) => messages.push(msg),
-      })
-
-      const receivedChunks: StreamChunk[] = []
-      while (true) {
-        const { value, done } = await generator.next()
-        if (done) break
-        receivedChunks.push(value)
-      }
-
-      expect(receivedChunks).toHaveLength(4)
-      expect(receivedChunks[0]).toEqual({
-        type: "started",
-        thread_id: "thread_456",
-        agent_id: PERSONAL_AGENT_ID,
-      })
-      expect(messages).toHaveLength(2)
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        `https://api.notion.com/v1/agents/${PERSONAL_AGENT_ID}/chatStream`,
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({

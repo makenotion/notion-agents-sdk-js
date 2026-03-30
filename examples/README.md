@@ -35,15 +35,6 @@ Demonstrates the basic flow:
 - Using the `Thread` class to poll for completion
 - Displaying the conversation
 
-### `personal-agent.ts`
-
-Shows how to use the Personal Agent (Notion AI):
-
-- Accessing the personal agent directly
-- Streaming and non-streaming chat
-- Listing personal agent threads
-- Managing conversation history
-
 ### `streaming.ts`
 
 Shows real-time streaming:
@@ -75,7 +66,7 @@ Displays agent version information:
 
 - Listing agents with their version details (id, number, published_at)
 - Showing which agent version was used for each thread
-- Understanding when version is null (unpublished agents or personal agent)
+- Understanding when version metadata is unavailable
 
 ## Key patterns
 

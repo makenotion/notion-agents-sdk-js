@@ -1,7 +1,6 @@
 import React from "react"
 import { Box, Text, useInput } from "ink"
 import type { AgentData } from "@notionhq/agents-client"
-import { isPersonalAgent } from "@notionhq/agents-client"
 
 /**
  * Interactive agent selector component with arrow key navigation.
@@ -32,7 +31,6 @@ export function AgentSelector({
       </Text>
       <Box marginTop={1} flexDirection="column">
         {agents.map((agent, index) => {
-          const isPersonalAgentItem = isPersonalAgent(agent.id)
           const isSelected = index === selectedIndex
 
           return (
@@ -40,12 +38,6 @@ export function AgentSelector({
               <Text color={isSelected ? "green" : "white"} bold={isSelected}>
                 {isSelected ? "→ " : "  "}
                 {agent.name}
-                {isPersonalAgentItem && (
-                  <Text color="blue" dimColor={!isSelected}>
-                    {" "}
-                    (Notion AI)
-                  </Text>
-                )}
               </Text>
             </Box>
           )
