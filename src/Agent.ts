@@ -3,6 +3,7 @@ import { Thread } from "./Thread.js"
 import type {
   ChatAttachmentInput,
   ChatInvocationResponse,
+  ChatLifecycleMetadata,
   PollThreadOptions,
   StreamChunk,
   StreamMessage,
@@ -50,6 +51,8 @@ export class Agent {
     message?: string
     attachments?: ChatAttachmentInput[]
     threadId?: string
+    metadata?: ChatLifecycleMetadata
+    promptContext?: string
   }): Record<string, unknown> {
     const message =
       typeof args.message === "string" && args.message.trim().length > 0
@@ -75,13 +78,27 @@ export class Agent {
       ...(message ? { message } : {}),
       ...(args.threadId ? { thread_id: args.threadId } : {}),
       ...(attachments ? { attachments } : {}),
+      ...(args.metadata ? { metadata: args.metadata } : {}),
+      ...(args.promptContext ? { prompt_context: args.promptContext } : {}),
     }
   }
 
   async chat(
     args:
-      | { message: string; attachments?: ChatAttachmentInput[]; threadId?: string }
-      | { message?: string; attachments: ChatAttachmentInput[]; threadId?: string },
+      | {
+          message: string
+          attachments?: ChatAttachmentInput[]
+          threadId?: string
+          metadata?: ChatLifecycleMetadata
+          promptContext?: string
+        }
+      | {
+          message?: string
+          attachments: ChatAttachmentInput[]
+          threadId?: string
+          metadata?: ChatLifecycleMetadata
+          promptContext?: string
+        },
   ): Promise<ChatInvocationResponse> {
     try {
       return await this.client.request<ChatInvocationResponse>({
@@ -156,6 +173,8 @@ export class Agent {
     attachments?: ChatAttachmentInput[]
     threadId?: string
     verbose?: boolean
+    metadata?: ChatLifecycleMetadata
+    promptContext?: string
     onMessage?: (message: StreamMessage) => void
   }): AsyncGenerator<StreamChunk, ThreadInfo, undefined>
   chatStream(args: {
@@ -163,6 +182,8 @@ export class Agent {
     attachments: ChatAttachmentInput[]
     threadId?: string
     verbose?: boolean
+    metadata?: ChatLifecycleMetadata
+    promptContext?: string
     onMessage?: (message: StreamMessage) => void
   }): AsyncGenerator<StreamChunk, ThreadInfo, undefined>
   async *chatStream(args: {
@@ -170,6 +191,8 @@ export class Agent {
     attachments?: ChatAttachmentInput[]
     threadId?: string
     verbose?: boolean
+    metadata?: ChatLifecycleMetadata
+    promptContext?: string
     onMessage?: (message: StreamMessage) => void
   }): AsyncGenerator<StreamChunk, ThreadInfo, undefined> {
     const url = new URL(`${this.baseUrl}/v1/agents/${this.id}/chatStream`)

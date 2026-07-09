@@ -169,6 +169,32 @@ describe("Agent", () => {
       expect(result).toEqual(mockResponse)
     })
 
+    it("should forward metadata and promptContext in request body", async () => {
+      const mockResponse = mockChatInvocation()
+
+      const mockClient = createMockClient(async ({ body }) => {
+        expect(body).toEqual({
+          message: "Hello",
+          metadata: { user_id: "external-user-1" },
+          prompt_context: "Extra context.",
+        })
+        return mockResponse
+      })
+
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      await agent.chat({
+        message: "Hello",
+        metadata: { user_id: "external-user-1" },
+        promptContext: "Extra context.",
+      })
+    })
+
     it("should validate missing message and attachments", async () => {
       const mockClient = createMockClient(async () => {
         throw new Error("Should not be called")
@@ -464,6 +490,56 @@ describe("Agent", () => {
           ],
         }),
       )
+    })
+
+    it("should forward metadata and promptContext in stream request body", async () => {
+      const chunks = [
+        '{"type":"started","thread_id":"thread_123","agent_id":"agent_123","metadata":{"user_id":"external-user-1"}}\n',
+        '{"type":"done","thread_id":"thread_123","metadata":{"user_id":"external-user-1"}}\n',
+      ]
+
+      mockFetch.mockResolvedValue(mockStreamResponse(chunks))
+
+      const mockClient = createMockClient(vi.fn())
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      const received: StreamChunk[] = []
+      const generator = agent.chatStream({
+        message: "Hello",
+        metadata: { user_id: "external-user-1" },
+        promptContext: "Extra context.",
+      })
+      while (true) {
+        const { value, done } = await generator.next()
+        if (done) break
+        received.push(value)
+      }
+
+      const fetchInit = mockFetch.mock.calls[0]?.[1] as RequestInit | undefined
+      expect(fetchInit?.body).toBe(
+        JSON.stringify({
+          message: "Hello",
+          metadata: { user_id: "external-user-1" },
+          prompt_context: "Extra context.",
+        }),
+      )
+
+      expect(received[0]).toEqual({
+        type: "started",
+        thread_id: "thread_123",
+        agent_id: "agent_123",
+        metadata: { user_id: "external-user-1" },
+      })
+      expect(received[received.length - 1]).toEqual({
+        type: "done",
+        thread_id: "thread_123",
+        metadata: { user_id: "external-user-1" },
+      })
     })
 
     it("should upsert cumulative agent messages by id", async () => {

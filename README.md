@@ -247,12 +247,17 @@ await agent.chat({
   message?: string,
   attachments?: Array<{ fileUploadId: string, name?: string }>,
   threadId?: string,
+  metadata?: { user_id?: string },
+  promptContext?: string,
 })
 ```
 
 You must provide either a non-empty `message` or at least one `attachment`.
 
 Attachments must reference files uploaded via the Notion **File Upload API**. The agent runtime may surface attachments back to you as signed URLs (with an `expiry_time`) in user message chunks and in `listMessages()` responses.
+
+- `metadata.user_id`: caller-provided external user identifier for lifecycle metadata and correlation. Does not change the Notion actor used for authorization.
+- `promptContext`: additional caller-provided context for the agent to consider while responding.
 
 Returns `Promise<ChatInvocationResponse>`.
 
@@ -266,6 +271,8 @@ const stream = agent.chatStream({
   attachments?: Array<{ fileUploadId: string, name?: string }>,
   threadId?: string,
   verbose?: boolean, // default true
+  metadata?: { user_id?: string },
+  promptContext?: string,
   onMessage?: (message: StreamMessage) => void,
 })
 ```
@@ -274,6 +281,7 @@ Notes:
 
 - Agent message chunks may be emitted multiple times for the same `id` as more information becomes available; treat them as **upserts keyed by `id`**.
 - When `verbose: false`, agent message chunks omit `content_parts` and only return `content`.
+- When `metadata` is provided on the request, it is echoed back on the `started` and `done` stream chunks as `metadata`.
 
 Returns `AsyncGenerator<StreamChunk, ThreadInfo, undefined>`.
 

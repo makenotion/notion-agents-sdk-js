@@ -71,6 +71,10 @@ export type ChatAttachmentInput = {
   name?: string
 }
 
+export type ChatLifecycleMetadata = {
+  user_id?: string
+}
+
 export type ThreadMessageAttachment = {
   name: string
   content_type: string
@@ -145,9 +149,14 @@ export type AgentListResponse = {
 }
 
 export type StreamChunk =
-  | { type: "started"; thread_id: string; agent_id: string }
+  | {
+      type: "started"
+      thread_id: string
+      agent_id: string
+      metadata?: ChatLifecycleMetadata
+    }
   | ({ type: "message" } & StreamMessage)
-  | { type: "done"; thread_id: string }
+  | { type: "done"; thread_id: string; metadata?: ChatLifecycleMetadata }
   | {
       type: "error"
       code:
