@@ -176,7 +176,7 @@ describe("Agent", () => {
         expect(body).toEqual({
           message: "Hello",
           metadata: { user_id: "external-user-1" },
-          promptContext: "Extra context.",
+          prompt_context: "Extra context.",
         })
         return mockResponse
       })
@@ -525,7 +525,7 @@ describe("Agent", () => {
         JSON.stringify({
           message: "Hello",
           metadata: { user_id: "external-user-1" },
-          promptContext: "Extra context.",
+          prompt_context: "Extra context.",
         }),
       )
 

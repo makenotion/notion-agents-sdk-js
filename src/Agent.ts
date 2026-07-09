@@ -79,7 +79,7 @@ export class Agent {
       ...(args.threadId ? { thread_id: args.threadId } : {}),
       ...(attachments ? { attachments } : {}),
       ...(args.metadata ? { metadata: args.metadata } : {}),
-      ...(args.promptContext ? { promptContext: args.promptContext } : {}),
+      ...(args.promptContext ? { prompt_context: args.promptContext } : {}),
     }
   }
 
