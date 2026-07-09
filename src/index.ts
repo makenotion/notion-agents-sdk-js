@@ -28,6 +28,7 @@ export type {
   AgentIcon,
   AgentData,
   ChatAttachmentInput,
+  ChatLifecycleMetadata,
   ThreadMessage,
   ThreadMessageAttachment,
   ThreadData,
