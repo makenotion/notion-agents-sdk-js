@@ -52,7 +52,7 @@ export type AgentType = "notion_ai" | "custom" | "database_autofill"
 
 export type AgentModelMode = "auto" | "pinned"
 
-export type AgentStatus = "active" | "deleted"
+export type AgentStatus = "active" | "disabled" | "deleted"
 
 export type AgentCreatedBy = {
   id: string
