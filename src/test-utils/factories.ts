@@ -25,12 +25,26 @@ export class MockNotionAPIError extends Error {
 export const mockAgentData = (overrides?: Partial<AgentData>): AgentData => ({
   object: "agent",
   id: "agent_123",
+  agent_type: "custom",
   name: "Test Agent",
   description: null,
   instruction: "Test instructions",
   instructions_page_id: null,
   icon: null,
   version: null,
+  model: null,
+  model_mode: null,
+  connections: [],
+  tools: [],
+  permissions: {
+    access_level: "restricted",
+    execution_mode: "invoker",
+  },
+  status: "active",
+  created_by: null,
+  created_time: null,
+  last_edited_time: null,
+  last_run_at: null,
   ...overrides,
 })
 
