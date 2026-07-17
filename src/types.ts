@@ -149,7 +149,7 @@ export type AgentListResponse = {
 }
 
 export type ChatStreamUsage = {
-  totalTokens: number
+  total_tokens: number
 }
 
 export type ChatStreamArtifact =
