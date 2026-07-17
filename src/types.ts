@@ -59,9 +59,30 @@ export type AgentCreatedBy = {
   type: "user" | "bot"
 }
 
-export type AgentPermissions = {
-  access_level: "workspace" | "restricted" | "user"
-  execution_mode: "invoker" | "owner"
+export type AgentConnection = {
+  type: string
+  name: string
+  status: "connected" | "needs_setup"
+}
+
+export type AgentTool = {
+  type: "script"
+  key: string
+  name: string
+}
+
+export type AgentPermissionAccessLevel =
+  | "read"
+  | "comment"
+  | "edit"
+  | "full_access"
+
+export type AgentPermission = {
+  object: "space" | "page"
+  id: string
+  name: string | null
+  access_level: AgentPermissionAccessLevel
+  scope?: "shared_pages"
 }
 
 export type AgentData = {
@@ -76,9 +97,9 @@ export type AgentData = {
   version: AgentVersion | null
   model: string | null
   model_mode: AgentModelMode | null
-  connections: string[]
-  tools: string[]
-  permissions: AgentPermissions
+  connections: AgentConnection[]
+  tools: AgentTool[]
+  permissions: AgentPermission[]
   status: AgentStatus
   created_by: AgentCreatedBy | null
   created_time: string | null
