@@ -35,6 +35,8 @@ export type {
   ChatInvocationResponse,
   AgentListResponse,
   AgentContentPart,
+  ChatStreamUsage,
+  ChatStreamArtifact,
   StreamChunk,
   StreamMessage,
   ThreadInfo,

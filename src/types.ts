@@ -148,15 +148,34 @@ export type AgentListResponse = {
   next_cursor: string | null
 }
 
+export type ChatStreamUsage = {
+  totalTokens: number
+}
+
+export type ChatStreamArtifact =
+  | { type: "page"; url: string; title: string }
+  | { type: "html_artifact"; url: string; page_url: string }
+
 export type StreamChunk =
   | {
       type: "started"
       thread_id: string
       agent_id: string
+      model: string
       metadata?: ChatLifecycleMetadata
     }
   | ({ type: "message" } & StreamMessage)
-  | { type: "done"; thread_id: string; metadata?: ChatLifecycleMetadata }
+  | {
+      type: "done"
+      thread_id: string
+      model: string
+      usage: ChatStreamUsage
+      duration_ms: number
+      connections_used: string[]
+      artifacts: ChatStreamArtifact[]
+      metadata?: ChatLifecycleMetadata
+    }
+  | { type: "waiting_for_user" }
   | {
       type: "error"
       code:
@@ -168,6 +187,7 @@ export type StreamChunk =
         | "rate_limited"
         | string
       message: string
+      usage?: ChatStreamUsage
     }
 
 export type ThreadInfo = {
