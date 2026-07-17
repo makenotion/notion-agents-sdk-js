@@ -156,6 +156,13 @@ export type ChatStreamArtifact =
   | { type: "page"; url: string; title: string }
   | { type: "html_artifact"; url: string; page_url: string }
 
+export type ChatStreamToolStatus =
+  | "pending"
+  | "running"
+  | "waiting_for_user"
+  | "completed"
+  | "failed"
+
 export type StreamChunk =
   | {
       type: "started"
@@ -164,7 +171,16 @@ export type StreamChunk =
       model: string
       metadata?: ChatLifecycleMetadata
     }
-  | ({ type: "message" } & StreamMessage)
+  | ({ type: "message"; delta: string } & StreamMessage)
+  | {
+      type: "tool"
+      id: string
+      agent_step_id: string | null
+      tool_call_id: string | null
+      tool_name: string
+      tool_type: string
+      status: ChatStreamToolStatus
+    }
   | {
       type: "done"
       thread_id: string
