@@ -166,6 +166,7 @@ export type StreamChunk =
         | "restricted_resource"
         | "unauthorized"
         | "rate_limited"
+        | "service_unavailable"
         | string
       message: string
     }
