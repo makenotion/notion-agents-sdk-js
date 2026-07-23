@@ -27,7 +27,6 @@ export const mockAgentData = (overrides?: Partial<AgentData>): AgentData => ({
   id: "agent_123",
   name: "Test Agent",
   description: null,
-  instruction: "Test instructions",
   instructions_page_id: null,
   icon: null,
   version: null,

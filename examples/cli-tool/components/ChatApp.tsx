@@ -347,9 +347,6 @@ export function ChatApp({
             {currentAgent?.name || "Agent"}
           </Text>
         </Box>
-        {currentAgent?.instruction && (
-          <Text dimColor>{currentAgent.instruction}</Text>
-        )}
       </Box>
 
       {workspaceInfo && (
