@@ -91,7 +91,6 @@ export type AgentData = {
   agent_type: AgentType
   name: string
   description: string | null
-  instruction: string | null
   instructions_page_id: string | null
   icon: AgentIcon | null
   version: AgentVersion | null
@@ -336,6 +335,9 @@ export type ThreadMessageListParams = PaginationParams & {
   role?: "user" | "agent"
 }
 
+export type AgentCreatedByFilter = string | "me"
+
 export type AgentListParams = PaginationParams & {
   name?: string
+  created_by?: AgentCreatedByFilter[]
 }

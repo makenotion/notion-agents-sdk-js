@@ -34,7 +34,6 @@ async function main() {
   for (const agent of agentsResponse.results) {
     console.log(`Agent: ${agent.name}`)
     console.log(`  ID: ${agent.id}`)
-    console.log(`  Instruction: ${agent.instruction || "(none)"}`)
 
     if (agent.version) {
       console.log(`  Version:`)

@@ -219,10 +219,13 @@ Lists all accessible agents.
 ```ts
 await client.agents.list({
   name?: string,
+  created_by?: Array<string | "me">,
   page_size?: number,
   start_cursor?: string,
 })
 ```
+
+- `created_by`: filter agents by one or more creator user IDs. Use `"me"` for the user associated with the API token.
 
 Returns `Promise<AgentListResponse>`.
 

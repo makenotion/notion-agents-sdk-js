@@ -44,7 +44,6 @@ describe("Agent", () => {
         client: mockClient,
         id: "agent_123",
         name: "Test Agent",
-        instruction: null,
         baseUrl: "https://api.notion.com",
         auth: "test_token",
       })
@@ -127,7 +126,6 @@ describe("Agent", () => {
         client: mockClient,
         id: "agent_123",
         name: "Test Agent",
-        instruction: null,
         baseUrl: "https://api.notion.com",
         auth: "test_token",
       })
@@ -239,7 +237,6 @@ describe("Agent", () => {
         client: mockClient,
         id: "agent_123",
         name: "Test Agent",
-        instruction: null,
         baseUrl: "https://api.notion.com",
         auth: "test_token",
       })
@@ -268,7 +265,6 @@ describe("Agent", () => {
         client: mockClient,
         id: "agent_123",
         name: "Test Agent",
-        instruction: null,
         baseUrl: "https://api.notion.com",
         auth: "test_token",
       })
@@ -367,7 +363,6 @@ describe("Agent", () => {
         client: mockClient,
         id: "agent_123",
         name: "Test Agent",
-        instruction: null,
         baseUrl: "https://api.notion.com",
         auth: "test_token",
       })
@@ -598,7 +593,6 @@ describe("Agent", () => {
         client: mockClient,
         id: "agent_123",
         name: "Test Agent",
-        instruction: null,
         baseUrl: "https://api.notion.com",
         auth: "test_token",
       })

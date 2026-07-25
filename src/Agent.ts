@@ -23,7 +23,6 @@ import {
 export class Agent {
   public readonly id: string
   public readonly name?: string
-  public readonly instruction?: string | null
   private readonly client: Client
   private readonly baseUrl: string
   private readonly auth: string
@@ -33,7 +32,6 @@ export class Agent {
     client: Client
     id: string
     name?: string
-    instruction?: string | null
     baseUrl: string
     auth: string
     notionVersion?: string
@@ -41,7 +39,6 @@ export class Agent {
     this.client = args.client
     this.id = args.id
     this.name = args.name
-    this.instruction = args.instruction
     this.baseUrl = args.baseUrl
     this.auth = args.auth
     this.notionVersion = args.notionVersion ?? "2025-09-03"
