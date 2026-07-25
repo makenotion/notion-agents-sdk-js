@@ -48,17 +48,63 @@ export type AgentIcon =
       custom_agent_avatar: CustomAgentAvatar
     }
 
+export type AgentType = "notion_ai" | "custom" | "database_autofill"
+
+export type AgentModelMode = "auto" | "pinned"
+
+export type AgentStatus = "active" | "disabled" | "deleted"
+
+export type AgentCreatedBy = {
+  id: string
+  type: "user" | "bot"
+}
+
+export type AgentConnection = {
+  type: string
+  name: string
+  status: "connected" | "needs_setup"
+}
+
+export type AgentTool = {
+  type: "script"
+  key: string
+  name: string
+}
+
+export type AgentPermissionAccessLevel =
+  | "read"
+  | "comment"
+  | "edit"
+  | "full_access"
+
+export type AgentPermission = {
+  object: "space" | "page"
+  id: string
+  name: string | null
+  access_level: AgentPermissionAccessLevel
+  scope?: "shared_pages"
+}
+
 export type AgentData = {
   object: "agent"
   id: string
+  agent_type: AgentType
   name: string
   description: string | null
   instruction: string | null
   instructions_page_id: string | null
   icon: AgentIcon | null
   version: AgentVersion | null
-  created_time?: string
-  last_edited_time?: string
+  model: string | null
+  model_mode: AgentModelMode | null
+  connections: AgentConnection[]
+  tools: AgentTool[]
+  permissions: AgentPermission[]
+  status: AgentStatus
+  created_by: AgentCreatedBy | null
+  created_time: string | null
+  last_edited_time: string | null
+  last_run_at: string | null
 }
 
 export type ThreadMessage = {
