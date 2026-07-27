@@ -219,12 +219,16 @@ Lists all accessible agents.
 ```ts
 await client.agents.list({
   name?: string,
+  agent_type?: Array<"notion_ai" | "custom_agent" | "autofill_custom_agent" | "external">,
+  agent_ids?: string[],
   created_by?: Array<string | "me">,
   page_size?: number,
   start_cursor?: string,
 })
 ```
 
+- `agent_type`: filter agents by one or more agent types.
+- `agent_ids`: filter agents by one or more agent IDs.
 - `created_by`: filter agents by one or more creator user IDs. Use `"me"` for the user associated with the API token.
 
 Returns `Promise<AgentListResponse>`.
