@@ -48,7 +48,11 @@ export type AgentIcon =
       custom_agent_avatar: CustomAgentAvatar
     }
 
-export type AgentType = "notion_ai" | "custom" | "database_autofill"
+export type AgentType =
+  | "notion_ai"
+  | "custom_agent"
+  | "autofill_custom_agent"
+  | "external"
 
 export type AgentModelMode = "auto" | "pinned"
 
@@ -339,5 +343,7 @@ export type AgentCreatedByFilter = string | "me"
 
 export type AgentListParams = PaginationParams & {
   name?: string
+  agent_type?: AgentType[]
+  agent_ids?: string[]
   created_by?: AgentCreatedByFilter[]
 }

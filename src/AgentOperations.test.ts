@@ -110,6 +110,29 @@ describe("AgentOperations", () => {
       expect(result.results).toHaveLength(1)
     })
 
+    it("should support type and ID filtering", async () => {
+      const mockResponse = mockAgentListResponse()
+
+      const mockClient = createMockClient(async ({ query }) => {
+        expect(query).toEqual({
+          agent_type: ["custom_agent", "autofill_custom_agent"],
+          agent_ids: ["agent_1", "agent_2"],
+        })
+        return mockResponse
+      })
+
+      const operations = new AgentOperations({
+        client: mockClient,
+        auth: "test_token",
+        baseUrl: "https://api.notion.com",
+      })
+
+      await operations.list({
+        agent_type: ["custom_agent", "autofill_custom_agent"],
+        agent_ids: ["agent_1", "agent_2"],
+      })
+    })
+
     it("should omit created_by when the filter is empty", async () => {
       const mockResponse = mockAgentListResponse({
         results: [mockAgentData()],
