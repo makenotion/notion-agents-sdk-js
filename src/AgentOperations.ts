@@ -24,6 +24,12 @@ export class AgentOperations {
   async list(args?: AgentListParams): Promise<AgentListResponse> {
     const query: Record<string, string | number | string[]> = {}
     if (args?.name) query.name = args.name
+    if (args?.agent_type && args.agent_type.length > 0) {
+      query.agent_type = args.agent_type
+    }
+    if (args?.agent_ids && args.agent_ids.length > 0) {
+      query.agent_ids = args.agent_ids
+    }
     if (args?.created_by && args.created_by.length > 0) {
       query.created_by = args.created_by
     }

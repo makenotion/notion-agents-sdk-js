@@ -128,6 +128,100 @@ describe("AgentOperations", () => {
 
       await operations.list({ created_by: [] })
     })
+
+    it("should support agent_type filtering", async () => {
+      const mockResponse = mockAgentListResponse({
+        results: [mockAgentData()],
+      })
+
+      const mockClient = createMockClient(async ({ query }) => {
+        expect(query).toEqual({
+          agent_type: ["custom_agent", "external"],
+        })
+        return mockResponse
+      })
+
+      const operations = new AgentOperations({
+        client: mockClient,
+        auth: "test_token",
+        baseUrl: "https://api.notion.com",
+      })
+
+      const result = await operations.list({
+        agent_type: ["custom_agent", "external"],
+      })
+
+      expect(result.results).toHaveLength(1)
+    })
+
+    it("should omit agent_type when the filter is empty", async () => {
+      const mockResponse = mockAgentListResponse({
+        results: [mockAgentData()],
+      })
+
+      const mockClient = createMockClient(async ({ query }) => {
+        expect(query).toEqual({})
+        return mockResponse
+      })
+
+      const operations = new AgentOperations({
+        client: mockClient,
+        auth: "test_token",
+        baseUrl: "https://api.notion.com",
+      })
+
+      await operations.list({ agent_type: [] })
+    })
+
+    it("should support agent_ids filtering", async () => {
+      const mockResponse = mockAgentListResponse({
+        results: [mockAgentData()],
+      })
+
+      const mockClient = createMockClient(async ({ query }) => {
+        expect(query).toEqual({
+          agent_ids: [
+            "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          ],
+        })
+        return mockResponse
+      })
+
+      const operations = new AgentOperations({
+        client: mockClient,
+        auth: "test_token",
+        baseUrl: "https://api.notion.com",
+      })
+
+      const result = await operations.list({
+        agent_ids: [
+          "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        ],
+      })
+
+      expect(result.results).toHaveLength(1)
+    })
+
+    it("should omit agent_ids when the filter is empty", async () => {
+      const mockResponse = mockAgentListResponse({
+        results: [mockAgentData()],
+      })
+
+      const mockClient = createMockClient(async ({ query }) => {
+        expect(query).toEqual({})
+        return mockResponse
+      })
+
+      const operations = new AgentOperations({
+        client: mockClient,
+        auth: "test_token",
+        baseUrl: "https://api.notion.com",
+      })
+
+      await operations.list({ agent_ids: [] })
+    })
   })
 
   describe("agent", () => {

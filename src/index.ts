@@ -63,6 +63,7 @@ export type {
   ThreadMessageListParams,
   AgentListParams,
   AgentCreatedByFilter,
+  AgentTypeFilter,
   PersonalAgentId,
 } from "./types.js"
 export { PERSONAL_AGENT_ID } from "./types.js"
