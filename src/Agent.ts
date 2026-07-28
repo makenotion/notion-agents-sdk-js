@@ -250,6 +250,12 @@ export class Agent {
             if (isObjectNotFoundErrorForType(chunk, "agent")) {
               throw new AgentNotFoundError(this.id)
             }
+            if (
+              args.threadId &&
+              isObjectNotFoundErrorForType(chunk, "thread")
+            ) {
+              throw new ThreadNotFoundError(args.threadId)
+            }
             throw new StreamError(chunk.message, chunk.code)
           }
 

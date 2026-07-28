@@ -633,6 +633,32 @@ describe("Agent", () => {
       })
     })
 
+    it("should throw ThreadNotFoundError for a thread-not-found stream error", async () => {
+      const chunks = [
+        '{"type":"error","code":"object_not_found","message":"Could not find thread with ID: invalid_thread"}\n',
+      ]
+
+      mockFetch.mockResolvedValue(mockStreamResponse(chunks))
+
+      const mockClient = createMockClient(vi.fn())
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      await expect(
+        agent
+          .chatStream({ message: "Hello", threadId: "invalid_thread" })
+          .next(),
+      ).rejects.toMatchObject({
+        name: "ThreadNotFoundError",
+        code: "thread_not_found",
+        threadId: "invalid_thread",
+      })
+    })
+
     it("should handle HTTP 404 errors", async () => {
       mockFetch.mockResolvedValue(
         mockHTTPErrorResponse(404, "Not Found", {
