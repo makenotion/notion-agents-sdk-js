@@ -80,11 +80,23 @@ export class Agent {
     }
   }
 
+  /**
+   * Start a new chat, or continue an existing one via `threadId`.
+   *
+   * Note: passing `threadId` to continue an existing thread is deprecated.
+   * Prefer `client.agents.agent(agentId).thread(threadId).sendMessage(...)`
+   * (which calls `POST /v1/threads/:thread_id/messages`) to append to an
+   * existing thread.
+   */
   async chat(
     args:
       | {
           message: string
           attachments?: ChatAttachmentInput[]
+          /**
+           * @deprecated Use `client.agents.agent(agentId).thread(threadId).sendMessage(...)`
+           * to continue an existing thread.
+           */
           threadId?: string
           metadata?: ChatLifecycleMetadata
           promptContext?: string
@@ -92,6 +104,10 @@ export class Agent {
       | {
           message?: string
           attachments: ChatAttachmentInput[]
+          /**
+           * @deprecated Use `client.agents.agent(agentId).thread(threadId).sendMessage(...)`
+           * to continue an existing thread.
+           */
           threadId?: string
           metadata?: ChatLifecycleMetadata
           promptContext?: string
