@@ -245,6 +245,20 @@ export class Agent {
           }
 
           const chunk: StreamChunk = JSON.parse(line)
+
+          if (chunk.type === "error") {
+            if (isObjectNotFoundErrorForType(chunk, "agent")) {
+              throw new AgentNotFoundError(this.id)
+            }
+            if (
+              args.threadId &&
+              isObjectNotFoundErrorForType(chunk, "thread")
+            ) {
+              throw new ThreadNotFoundError(args.threadId)
+            }
+            throw new StreamError(chunk.message, chunk.code)
+          }
+
           yield chunk
 
           if (chunk.type === "started") {
@@ -274,8 +288,6 @@ export class Agent {
             messagesById.set(message.id, message)
 
             args.onMessage?.(message)
-          } else if (chunk.type === "error") {
-            throw new StreamError(chunk.message, chunk.code)
           }
         }
       }
