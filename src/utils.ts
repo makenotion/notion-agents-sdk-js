@@ -22,7 +22,7 @@ import { PERSONAL_AGENT_ID } from "./types.js"
  * ```
  */
 export function stripLangTags(text: string): string {
-  return text.replace(/<\/?lang[^>]*>/g, "")
+  return text.replace(/<\/?lang(?=[\s/>])[^>]*>/g, "")
 }
 
 /**
