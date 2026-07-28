@@ -579,7 +579,7 @@ describe("Agent", () => {
       })
     })
 
-    it("should handle errors in stream", async () => {
+    it("should throw stream errors without yielding them", async () => {
       const chunks = [
         '{"type":"started","thread_id":"thread_123","agent_id":"agent_123"}\n',
         '{"type":"error","code":"internal_server_error","message":"Something went wrong"}\n',
@@ -597,17 +597,40 @@ describe("Agent", () => {
         auth: "test_token",
       })
 
-      try {
-        for await (const chunk of agent.chatStream({ message: "Hello" })) {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          chunk
-        }
-        throw new Error("Should have thrown")
-      } catch (error) {
-        expect(error).toBeInstanceOf(StreamError)
-        expect((error as StreamError).code).toBe("internal_server_error")
-        expect((error as StreamError).message).toBe("Something went wrong")
-      }
+      const generator = agent.chatStream({ message: "Hello" })
+      await expect(generator.next()).resolves.toMatchObject({
+        done: false,
+        value: { type: "started" },
+      })
+      await expect(generator.next()).rejects.toMatchObject({
+        name: "StreamError",
+        code: "internal_server_error",
+        message: "Something went wrong",
+      })
+    })
+
+    it("should throw AgentNotFoundError for an agent-not-found stream error", async () => {
+      const chunks = [
+        '{"type":"error","code":"object_not_found","message":"Could not find agent with ID: invalid_agent"}\n',
+      ]
+
+      mockFetch.mockResolvedValue(mockStreamResponse(chunks))
+
+      const mockClient = createMockClient(vi.fn())
+      const agent = new Agent({
+        client: mockClient,
+        id: "invalid_agent",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      await expect(
+        agent.chatStream({ message: "Hello" }).next(),
+      ).rejects.toMatchObject({
+        name: "AgentNotFoundError",
+        code: "agent_not_found",
+        agentId: "invalid_agent",
+      })
     })
 
     it("should handle HTTP 404 errors", async () => {
