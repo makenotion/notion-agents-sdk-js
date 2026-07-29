@@ -35,6 +35,7 @@ export type {
   AgentTool,
   AgentPermission,
   AgentPermissionAccessLevel,
+  AgentOutputFormat,
   ChatAttachmentInput,
   ChatLifecycleMetadata,
   ThreadMessage,

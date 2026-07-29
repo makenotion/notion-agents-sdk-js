@@ -120,6 +120,8 @@ export type ChatLifecycleMetadata = {
   user_id?: string
 }
 
+export type AgentOutputFormat = "markdown" | "notion_flavored_markdown"
+
 export type ThreadMessageAttachment = {
   name: string
   content_type: string
@@ -333,6 +335,7 @@ export type ThreadMessageListResponse = PaginatedResponse<ThreadMessageItem> & {
 export type ThreadMessageListParams = PaginationParams & {
   verbose?: boolean
   role?: "user" | "agent"
+  format?: AgentOutputFormat
 }
 
 export type AgentCreatedByFilter = string | "me"

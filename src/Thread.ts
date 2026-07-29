@@ -44,6 +44,7 @@ export class Thread {
     const query: Record<string, string | number> = {}
     if (params?.verbose !== undefined) query.verbose = String(params.verbose)
     if (params?.role) query.role = params.role
+    if (params?.format) query.format = params.format
     if (params?.start_cursor) query.start_cursor = params.start_cursor
     if (params?.page_size) query.page_size = params.page_size
 

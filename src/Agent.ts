@@ -1,6 +1,7 @@
 import { Client } from "@notionhq/client"
 import { Thread } from "./Thread.js"
 import type {
+  AgentOutputFormat,
   ChatAttachmentInput,
   ChatInvocationResponse,
   ChatLifecycleMetadata,
@@ -170,6 +171,7 @@ export class Agent {
     attachments?: ChatAttachmentInput[]
     threadId?: string
     verbose?: boolean
+    format?: AgentOutputFormat
     metadata?: ChatLifecycleMetadata
     promptContext?: string
     onMessage?: (message: StreamMessage) => void
@@ -179,6 +181,7 @@ export class Agent {
     attachments: ChatAttachmentInput[]
     threadId?: string
     verbose?: boolean
+    format?: AgentOutputFormat
     metadata?: ChatLifecycleMetadata
     promptContext?: string
     onMessage?: (message: StreamMessage) => void
@@ -188,6 +191,7 @@ export class Agent {
     attachments?: ChatAttachmentInput[]
     threadId?: string
     verbose?: boolean
+    format?: AgentOutputFormat
     metadata?: ChatLifecycleMetadata
     promptContext?: string
     onMessage?: (message: StreamMessage) => void
@@ -195,6 +199,9 @@ export class Agent {
     const url = new URL(`${this.baseUrl}/v1/agents/${this.id}/chatStream`)
     if (args.verbose === false) {
       url.searchParams.set("verbose", "false")
+    }
+    if (args.format !== undefined) {
+      url.searchParams.set("format", args.format)
     }
 
     const response = await fetch(

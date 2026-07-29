@@ -278,6 +278,7 @@ const stream = agent.chatStream({
   attachments?: Array<{ fileUploadId: string, name?: string }>,
   threadId?: string,
   verbose?: boolean, // default true
+  format?: "markdown" | "notion_flavored_markdown",
   metadata?: { user_id?: string },
   promptContext?: string,
   onMessage?: (message: StreamMessage) => void,
@@ -288,6 +289,7 @@ Notes:
 
 - Agent message chunks may be emitted multiple times for the same `id` as more information becomes available; treat them as **upserts keyed by `id`**.
 - When `verbose: false`, agent message chunks omit `content_parts` and only return `content`.
+- `format` controls how agent-authored message content renders Notion mention tags. `markdown` converts them to standard Markdown links or text; `notion_flavored_markdown` preserves the Notion mention tags. When omitted, existing Agent SDK alpha callers default to `notion_flavored_markdown`.
 - When `metadata` is provided on the request, it is echoed back on the `started` and `done` stream chunks as `metadata`.
 
 Returns `AsyncGenerator<StreamChunk, ThreadInfo, undefined>`.
@@ -338,10 +340,13 @@ Lists messages in a thread:
 await thread.listMessages({
   verbose?: boolean,               // default true
   role?: "user" | "agent",
+  format?: "markdown" | "notion_flavored_markdown",
   page_size?: number,
   start_cursor?: string,
 })
 ```
+
+`format` controls how agent-authored message content renders Notion mention tags, matching the streaming endpoint's `format` param. When omitted, existing Agent SDK alpha callers default to `notion_flavored_markdown`.
 
 Returns `Promise<ThreadMessageListResponse>`.
 

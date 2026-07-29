@@ -449,6 +449,37 @@ describe("Agent", () => {
       )
     })
 
+    it("should include format query param when requested", async () => {
+      const chunks = [
+        '{"type":"started","thread_id":"thread_123","agent_id":"agent_123"}\n',
+        '{"type":"done","thread_id":"thread_123"}\n',
+      ]
+
+      mockFetch.mockResolvedValue(mockStreamResponse(chunks))
+
+      const mockClient = createMockClient(vi.fn())
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      const generator = agent.chatStream({
+        message: "Hello",
+        format: "markdown",
+      })
+      while (true) {
+        const { done } = await generator.next()
+        if (done) break
+      }
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://api.notion.com/v1/agents/agent_123/chatStream?format=markdown",
+        expect.any(Object),
+      )
+    })
+
     it("should send attachments-only requests", async () => {
       const chunks = [
         '{"type":"started","thread_id":"thread_123","agent_id":"agent_123"}\n',

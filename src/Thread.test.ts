@@ -141,6 +141,23 @@ describe("Thread", () => {
 
       await thread.listMessages({ verbose: false })
     })
+
+    it("should include format param", async () => {
+      const mockResponse = mockThreadMessageListResponse()
+
+      const mockClient = createMockClient(async ({ query }) => {
+        expect(query).toEqual({ format: "markdown" })
+        return mockResponse
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      await thread.listMessages({ format: "markdown" })
+    })
   })
 
   describe("poll", () => {
