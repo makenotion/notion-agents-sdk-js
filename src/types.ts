@@ -208,6 +208,13 @@ export type ChatStreamToolStatus =
   | "completed"
   | "failed"
 
+export type ChatStreamToolCategory =
+  | "search"
+  | "read"
+  | "write"
+  | "compute"
+  | "other"
+
 export type StreamChunk =
   | {
       type: "started"
@@ -220,11 +227,12 @@ export type StreamChunk =
   | {
       type: "tool"
       id: string
-      agent_step_id: string | null
-      tool_call_id: string | null
-      tool_name: string
-      tool_type: string
+      category: ChatStreamToolCategory
       status: ChatStreamToolStatus
+      agent_step_id?: string | null
+      tool_call_id?: string | null
+      tool_name?: string
+      tool_type?: string
     }
   | {
       type: "done"
