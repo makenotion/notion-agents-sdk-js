@@ -168,8 +168,8 @@ Important: polling returns **thread metadata** (status/title/creator/version). M
 
 When available, agent messages can include a structured representation of what the agent is doing, in `content_parts`.
 
-- **Streaming**: `agent.chatStream()` omits `content_parts` by default. Pass `verbose: true` to include it.
-- **Message listing**: `thread.listMessages()` omits `content_parts` by default. Pass `verbose: true` to include it.
+- **Streaming**: `agent.chatStream()` includes `content_parts` by default. Pass `verbose: false` to omit it.
+- **Message listing**: `thread.listMessages({ verbose: true })` may include `content_parts` for agent messages. Pass `verbose: false` to omit it.
 
 `content_parts` is an ordered array. You can think of it as “UI-friendly structure”, while `content` remains plain text.
 
@@ -181,7 +181,7 @@ High-level part types you may encounter:
 - `{ type: "follow_ups", follow_ups: Array<{ label: string, message: string }> }` — suggested follow-ups
 - `{ type: "custom_agent_template_picker" }` — non-text UI state used by the agent runtime
 
-If you don’t need this level of detail, omit `verbose` (or pass `verbose: false`) and use `content` only.
+If you don’t need this level of detail, prefer `verbose: false` and use `content` only.
 
 ## API reference (SDK)
 
@@ -277,7 +277,7 @@ const stream = agent.chatStream({
   message?: string,
   attachments?: Array<{ fileUploadId: string, name?: string }>,
   threadId?: string,
-  verbose?: boolean, // default false
+  verbose?: boolean, // default true
   metadata?: { user_id?: string },
   promptContext?: string,
   onMessage?: (message: StreamMessage) => void,
@@ -287,7 +287,7 @@ const stream = agent.chatStream({
 Notes:
 
 - Agent message chunks may be emitted multiple times for the same `id` as more information becomes available; treat them as **upserts keyed by `id`**.
-- By default (`verbose: false`), agent message chunks omit `content_parts` and only return `content`, and `tool` chunks expose only the stable `category`/`status` progress fields. Pass `verbose: true` to include `content_parts` and raw tool details (`tool_name`, `tool_type`, `tool_call_id`, `agent_step_id`).
+- By default (`verbose: true`), agent message chunks include `content_parts`, and `tool` chunks include raw tool details (`tool_name`, `tool_type`, `tool_call_id`, `agent_step_id`) in addition to the stable `category`/`status` progress fields. Pass `verbose: false` to omit `content_parts` and receive only the stable `category`/`status` fields on `tool` chunks.
 - When `metadata` is provided on the request, it is echoed back on the `started` and `done` stream chunks as `metadata`.
 
 Returns `AsyncGenerator<StreamChunk, ThreadInfo, undefined>`.
@@ -336,7 +336,7 @@ Lists messages in a thread:
 
 ```ts
 await thread.listMessages({
-  verbose?: boolean,               // default false
+  verbose?: boolean,               // default true
   role?: "user" | "agent",
   page_size?: number,
   start_cursor?: string,
