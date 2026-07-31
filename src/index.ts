@@ -66,4 +66,4 @@ export type {
   AgentTypeFilter,
   PersonalAgentId,
 } from "./types.js"
-export { PERSONAL_AGENT_ID } from "./types.js"
+export { PERSONAL_AGENT_ALIAS, PERSONAL_AGENT_ID } from "./types.js"
