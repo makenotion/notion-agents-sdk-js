@@ -47,6 +47,7 @@ export type {
   ChatStreamUsage,
   ChatStreamArtifact,
   ChatStreamToolStatus,
+  ChatStreamToolCategory,
   StreamChunk,
   StreamMessage,
   ThreadInfo,
