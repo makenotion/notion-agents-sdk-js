@@ -222,6 +222,12 @@ await client.agents.list({
   agent_type?: Array<"notion_ai" | "custom_agent" | "autofill_custom_agent" | "external">,
   agent_ids?: string[],
   created_by?: Array<string | "me">,
+  created_after?: string,
+  created_before?: string,
+  sort_by?: "created_time" | "last_used_time",
+  sort_direction?: "ascending" | "descending",
+  favorited?: boolean,
+  has_mcp_connections?: boolean,
   page_size?: number,
   start_cursor?: string,
 })
@@ -230,6 +236,11 @@ await client.agents.list({
 - `agent_type`: filter agents by one or more agent types.
 - `agent_ids`: filter agents by one or more agent IDs.
 - `created_by`: filter agents by one or more creator user IDs. Use `"me"` for the user associated with the API token.
+- `created_after` / `created_before`: filter agents by creation time, exclusive, as ISO 8601 timestamps.
+- `sort_by`: timestamp used to sort agents. Defaults to `created_time`.
+- `sort_direction`: sort direction. Defaults to `descending`.
+- `favorited`: filter by whether the agent is in the token owner's favorites.
+- `has_mcp_connections`: filter by whether the published agent has one or more MCP connections.
 
 Returns `Promise<AgentListResponse>`.
 

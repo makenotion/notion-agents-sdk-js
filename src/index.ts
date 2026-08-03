@@ -64,6 +64,8 @@ export type {
   AgentListParams,
   AgentCreatedByFilter,
   AgentTypeFilter,
+  AgentSortBy,
+  AgentSortDirection,
   PersonalAgentId,
 } from "./types.js"
 export { PERSONAL_AGENT_ID } from "./types.js"

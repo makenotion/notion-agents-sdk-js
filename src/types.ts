@@ -343,9 +343,19 @@ export type AgentTypeFilter =
   | "autofill_custom_agent"
   | "external"
 
+export type AgentSortBy = "created_time" | "last_used_time"
+
+export type AgentSortDirection = "ascending" | "descending"
+
 export type AgentListParams = PaginationParams & {
   name?: string
   agent_type?: AgentTypeFilter[]
   agent_ids?: string[]
   created_by?: AgentCreatedByFilter[]
+  created_after?: string
+  created_before?: string
+  sort_by?: AgentSortBy
+  sort_direction?: AgentSortDirection
+  favorited?: boolean
+  has_mcp_connections?: boolean
 }

@@ -33,6 +33,14 @@ export class AgentOperations {
     if (args?.created_by && args.created_by.length > 0) {
       query.created_by = args.created_by
     }
+    if (args?.created_after) query.created_after = args.created_after
+    if (args?.created_before) query.created_before = args.created_before
+    if (args?.sort_by) query.sort_by = args.sort_by
+    if (args?.sort_direction) query.sort_direction = args.sort_direction
+    if (args?.favorited !== undefined) query.favorited = String(args.favorited)
+    if (args?.has_mcp_connections !== undefined) {
+      query.has_mcp_connections = String(args.has_mcp_connections)
+    }
     if (args?.start_cursor) query.start_cursor = args.start_cursor
     if (args?.page_size) query.page_size = args.page_size
 
