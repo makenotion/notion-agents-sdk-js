@@ -35,11 +35,11 @@ async function main() {
     console.log(`Agent: ${agent.name}`)
     console.log(`  ID: ${agent.id}`)
 
-    if (agent.version) {
+    if (agent.agent_version) {
       console.log(`  Version:`)
-      console.log(`    ID: ${agent.version.id}`)
-      console.log(`    Number: ${agent.version.number}`)
-      console.log(`    Published At: ${agent.version.published_at}`)
+      console.log(`    ID: ${agent.agent_version.id}`)
+      console.log(`    Number: ${agent.agent_version.number}`)
+      console.log(`    Published At: ${agent.agent_version.published_at}`)
     } else {
       console.log(`  Version: null (no published version metadata)`)
     }
