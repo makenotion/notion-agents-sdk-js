@@ -65,5 +65,9 @@ export type {
   AgentCreatedByFilter,
   AgentTypeFilter,
   PersonalAgentId,
+  PendingUserAction,
+  PendingUserActionOption,
+  PendingUserActionRequirement,
+  ContinueThreadArgs,
 } from "./types.js"
 export { PERSONAL_AGENT_ID } from "./types.js"
