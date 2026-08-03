@@ -298,6 +298,7 @@ Returns `AsyncGenerator<StreamChunk, ThreadInfo, undefined>`.
 const thread = agent.thread(threadId)
 await agent.getThread(threadId)      // == agent.thread(threadId).get()
 await agent.pollThread(threadId)     // == agent.thread(threadId).poll()
+await agent.continueThread(threadId, {...}) // == agent.thread(threadId).continue({...})
 await agent.listThreads({...})       // list/paginate/filter threads
 ```
 
@@ -328,7 +329,7 @@ await thread.poll({
 })
 ```
 
-Returns `Promise<ThreadListItem>`. Throws `PollingTimeoutError` if attempts are exceeded.
+Returns `Promise<ThreadListItem>`. Throws `PollingTimeoutError` if attempts are exceeded. Polling also stops when the thread reaches the terminal `requires_action` status (see [Pending user actions](#pending-user-actions)).
 
 #### `listMessages(params?)`
 
@@ -344,6 +345,37 @@ await thread.listMessages({
 ```
 
 Returns `Promise<ThreadMessageListResponse>`.
+
+#### `continue(args)`
+
+Responds to one pending user action on the thread (see [Pending user actions](#pending-user-actions)):
+
+```ts
+// Approve or reject the action.
+await thread.continue({
+  actionId: string,
+  optionId: "approve" | "reject",
+})
+
+// Or provide a connection when the action requires one.
+await thread.continue({
+  actionId: string,
+  optionId: "use_connection",
+  input: { connectionId: string },
+})
+```
+
+Returns `Promise<ChatInvocationResponse>` — the thread resumes as a new pending invocation, which you can `poll()` or observe via `listMessages()`.
+
+### Pending user actions
+
+Some agent tool calls require the caller to confirm before they run. When that happens, the thread finishes its current turn in the `requires_action` status and surfaces the blocking actions on `pending_user_actions`:
+
+- `thread.get()` / `agent.listThreads()` — items include `status: "requires_action"` and a `pending_user_actions` array.
+- `thread.listMessages()` — the blocking agent message includes `pending_user_actions`.
+- `agent.chatStream()` — a terminal `waiting_for_user` chunk (and the final `done` chunk with `status: "requires_action"`) carries `pending_user_actions`.
+
+Each pending action has an `id`, a human-readable `title`, one or more `requirements` describing why user input is needed (e.g. `delete_content`, `url_safety`, `connect_integration`), and the `options` the caller can respond with. Pass the action `id` and the chosen option to `thread.continue()` to resume the thread.
 
 ### Pagination helpers
 

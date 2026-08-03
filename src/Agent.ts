@@ -4,6 +4,7 @@ import type {
   ChatAttachmentInput,
   ChatInvocationResponse,
   ChatLifecycleMetadata,
+  ContinueThreadArgs,
   PollThreadOptions,
   StreamChunk,
   StreamMessage,
@@ -133,6 +134,14 @@ export class Agent {
   ): Promise<ThreadListItem> {
     const thread = this.thread(threadId)
     return thread.poll(options)
+  }
+
+  async continueThread(
+    threadId: string,
+    args: ContinueThreadArgs,
+  ): Promise<ChatInvocationResponse> {
+    const thread = this.thread(threadId)
+    return thread.continue(args)
   }
 
   async listThreads(params?: ThreadListParams): Promise<ThreadListResponse> {
