@@ -61,6 +61,7 @@ export const mockChatInvocation = (
   object: "chat.invocation",
   agent_id: "agent_123",
   thread_id: "thread_456",
+  invocation_id: "invocation_789",
   status: "pending",
   ...overrides,
 })

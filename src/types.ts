@@ -182,6 +182,7 @@ export type ChatInvocationResponse = {
   object: "chat.invocation"
   agent_id: string
   thread_id: string
+  invocation_id: string
   status: "pending"
 }
 
@@ -211,14 +212,16 @@ export type ChatStreamToolStatus =
 export type StreamChunk =
   | {
       type: "started"
+      invocation_id: string
       thread_id: string
       agent_id: string
       model: string
       metadata?: ChatLifecycleMetadata
     }
-  | ({ type: "message"; delta: string } & StreamMessage)
+  | ({ type: "message"; invocation_id: string; delta: string } & StreamMessage)
   | {
       type: "tool"
+      invocation_id: string
       id: string
       agent_step_id: string | null
       tool_call_id: string | null
@@ -228,6 +231,7 @@ export type StreamChunk =
     }
   | {
       type: "done"
+      invocation_id: string
       thread_id: string
       model: string
       usage: ChatStreamUsage
@@ -236,9 +240,10 @@ export type StreamChunk =
       artifacts: ChatStreamArtifact[]
       metadata?: ChatLifecycleMetadata
     }
-  | { type: "waiting_for_user" }
+  | { type: "waiting_for_user"; invocation_id: string }
   | {
       type: "error"
+      invocation_id?: string
       code:
         | "object_not_found"
         | "validation_error"
