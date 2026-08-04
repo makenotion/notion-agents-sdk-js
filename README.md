@@ -284,11 +284,22 @@ const stream = agent.chatStream({
 })
 ```
 
+To resume delivery for an already-accepted invocation after a disconnect, call with `continueFrom` instead of message input:
+
+```ts
+const stream = agent.chatStream({
+  continueFrom: invocationId,
+  verbose?: boolean,
+  onMessage?: (message: StreamMessage) => void,
+})
+```
+
 Notes:
 
 - Agent message chunks may be emitted multiple times for the same `id` as more information becomes available; treat them as **upserts keyed by `id`**.
 - When `verbose: false`, agent message chunks omit `content_parts` and only return `content`.
 - When `metadata` is provided on the request, it is echoed back on the `started` and `done` stream chunks as `metadata`.
+- `continueFrom` cannot be combined with `message`, `attachments`, `threadId`, `metadata`, or `promptContext`. Persisted invocation metadata expires after seven days.
 
 Returns `AsyncGenerator<StreamChunk, ThreadInfo, undefined>`.
 

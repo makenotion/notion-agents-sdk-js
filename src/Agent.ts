@@ -183,19 +183,39 @@ export class Agent {
     promptContext?: string
     onMessage?: (message: StreamMessage) => void
   }): AsyncGenerator<StreamChunk, ThreadInfo, undefined>
-  async *chatStream(args: {
-    message?: string
-    attachments?: ChatAttachmentInput[]
-    threadId?: string
+  chatStream(args: {
+    continueFrom: string
     verbose?: boolean
-    metadata?: ChatLifecycleMetadata
-    promptContext?: string
     onMessage?: (message: StreamMessage) => void
-  }): AsyncGenerator<StreamChunk, ThreadInfo, undefined> {
+  }): AsyncGenerator<StreamChunk, ThreadInfo, undefined>
+  async *chatStream(
+    args:
+      | {
+          message?: string
+          attachments?: ChatAttachmentInput[]
+          threadId?: string
+          verbose?: boolean
+          metadata?: ChatLifecycleMetadata
+          promptContext?: string
+          onMessage?: (message: StreamMessage) => void
+        }
+      | {
+          continueFrom: string
+          verbose?: boolean
+          onMessage?: (message: StreamMessage) => void
+        },
+  ): AsyncGenerator<StreamChunk, ThreadInfo, undefined> {
     const url = new URL(`${this.baseUrl}/v1/agents/${this.id}/chatStream`)
     if (args.verbose === false) {
       url.searchParams.set("verbose", "false")
     }
+
+    const body =
+      "continueFrom" in args
+        ? { continue_from: args.continueFrom }
+        : this.buildChatRequestBody(args)
+    const threadIdForErrors =
+      "continueFrom" in args ? undefined : args.threadId
 
     const response = await fetch(
       url.toString(),
@@ -206,7 +226,7 @@ export class Agent {
           "Content-Type": "application/json",
           "Notion-Version": this.notionVersion,
         },
-        body: JSON.stringify(this.buildChatRequestBody(args)),
+        body: JSON.stringify(body),
       },
     )
 
@@ -251,10 +271,10 @@ export class Agent {
               throw new AgentNotFoundError(this.id)
             }
             if (
-              args.threadId &&
+              threadIdForErrors &&
               isObjectNotFoundErrorForType(chunk, "thread")
             ) {
-              throw new ThreadNotFoundError(args.threadId)
+              throw new ThreadNotFoundError(threadIdForErrors)
             }
             throw new StreamError(chunk.message, chunk.code)
           }
