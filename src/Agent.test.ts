@@ -487,6 +487,39 @@ describe("Agent", () => {
       )
     })
 
+    it("should send continue_from requests to resume an invocation", async () => {
+      const chunks = [
+        '{"type":"started","thread_id":"thread_123","agent_id":"agent_123"}\n',
+        '{"type":"message","id":"msg_agent_1","role":"agent","content":"Resumed response"}\n',
+        '{"type":"done","thread_id":"thread_123"}\n',
+      ]
+
+      mockFetch.mockResolvedValue(mockStreamResponse(chunks))
+
+      const mockClient = createMockClient(vi.fn())
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      const generator = agent.chatStream({
+        continueFrom: "12345678-1234-1234-1234-123456789abc",
+      })
+      while (true) {
+        const { done } = await generator.next()
+        if (done) break
+      }
+
+      const fetchInit = mockFetch.mock.calls[0]?.[1] as RequestInit | undefined
+      expect(fetchInit?.body).toBe(
+        JSON.stringify({
+          continue_from: "12345678-1234-1234-1234-123456789abc",
+        }),
+      )
+    })
+
     it("should forward metadata and promptContext in stream request body", async () => {
       const chunks = [
         '{"type":"started","thread_id":"thread_123","agent_id":"agent_123","metadata":{"user_id":"external-user-1"}}\n',
