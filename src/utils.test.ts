@@ -39,6 +39,16 @@ describe("stripLangTags", () => {
     expect(stripLangTags(input)).toBe(expected)
   })
 
+  it("should preserve tags whose names start with lang", () => {
+    const input = "I speak <language>English</language> fluently"
+    expect(stripLangTags(input)).toBe(input)
+  })
+
+  it("should preserve standalone tags whose names start with lang", () => {
+    const input = "See <langdefs> for details"
+    expect(stripLangTags(input)).toBe(input)
+  })
+
   it("should handle lang tags with various attributes", () => {
     const input =
       '<lang primary="en-US" secondary="es-ES" confidence="0.95">Hello</lang>'

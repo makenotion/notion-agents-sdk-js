@@ -341,9 +341,15 @@ export type ThreadMessageListParams = PaginationParams & {
 
 export type AgentCreatedByFilter = string | "me"
 
+export type AgentTypeFilter =
+  | "notion_ai"
+  | "custom_agent"
+  | "autofill_custom_agent"
+  | "external"
+
 export type AgentListParams = PaginationParams & {
   name?: string
-  agent_type?: AgentType[]
+  agent_type?: AgentTypeFilter[]
   agent_ids?: string[]
   created_by?: AgentCreatedByFilter[]
 }
