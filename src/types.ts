@@ -7,10 +7,21 @@ export type ThreadStatus = "pending" | "completed" | "failed"
 export const PERSONAL_AGENT_ID = "33333333-3333-3333-3333-333333333333" as const
 
 /**
+ * Stable alias for the personal agent, accepted anywhere an agent ID is
+ * expected. Normalized to {@link PERSONAL_AGENT_ID} server-side.
+ *
  * @deprecated Personal agent access is unsupported and should not be
  * used for new integrations.
  */
-export type PersonalAgentId = typeof PERSONAL_AGENT_ID
+export const PERSONAL_AGENT_ALIAS = "notion_ai" as const
+
+/**
+ * @deprecated Personal agent access is unsupported and should not be
+ * used for new integrations.
+ */
+export type PersonalAgentId =
+  | typeof PERSONAL_AGENT_ID
+  | typeof PERSONAL_AGENT_ALIAS
 
 export type AgentVersion = {
   id: string

@@ -1,4 +1,4 @@
-import { PERSONAL_AGENT_ID } from "./types.js"
+import { PERSONAL_AGENT_ALIAS, PERSONAL_AGENT_ID } from "./types.js"
 
 /**
  * Removes `<lang>` XML tags from agent response text.
@@ -30,5 +30,5 @@ export function stripLangTags(text: string): string {
  * used for new integrations.
  */
 export function isPersonalAgent(agentId: string): boolean {
-  return agentId === PERSONAL_AGENT_ID
+  return agentId === PERSONAL_AGENT_ID || agentId === PERSONAL_AGENT_ALIAS
 }
