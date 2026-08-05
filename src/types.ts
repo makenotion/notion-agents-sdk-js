@@ -96,6 +96,29 @@ export type AgentPermission = {
   scope?: "shared_pages"
 }
 
+export type AgentPauseReason =
+  | "run_limit"
+  | "credit_limit"
+  | "runaway_credit_usage"
+  | "workspace_credit_limit"
+  | "failure_limit"
+  | "mark_session_failed_autopause"
+  | "disabled_from_workspace_settings"
+  | "disabled_from_api"
+  | "disabled_from_agent_settings"
+  | "disabled_due_to_no_members_with_access"
+  | "disabled_due_to_lack_of_editors"
+  | "disabled_by_notion"
+  | "internal_error"
+  | "needs_user_review"
+  | "tool_unavailable"
+
+export type AgentTrigger = {
+  type: string
+  enabled: boolean
+  schedule: string | null
+}
+
 export type AgentData = {
   object: "agent"
   id: string
@@ -104,17 +127,20 @@ export type AgentData = {
   description: string | null
   instructions_page_id: string | null
   icon: AgentIcon | null
-  version: AgentVersion | null
+  agent_version: AgentVersion | null
   model: string | null
   model_mode: AgentModelMode | null
   connections: AgentConnection[]
   tools: AgentTool[]
   permissions: AgentPermission[]
   status: AgentStatus
+  pause_reason: AgentPauseReason | null
   created_by: AgentCreatedBy | null
-  created_time: string | null
-  last_edited_time: string | null
+  created_time: string
+  last_edited_time: string
   last_run_at: string | null
+  credit_limit: number | null
+  triggers: AgentTrigger[]
 }
 
 export type ThreadMessage = {
