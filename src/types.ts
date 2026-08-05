@@ -323,10 +323,28 @@ export type ThreadListResponse = PaginatedResponse<ThreadListItem> & {
   type: "thread"
 }
 
+export type ThreadActivity =
+  | "all"
+  | "pending"
+  | "in_progress"
+  | "failed"
+  | "success"
+
+export type ThreadActorFilter = string | "me"
+
+export type ThreadSortBy = "created_time" | "last_used_time"
+
+export type ThreadSortDirection = "ascending" | "descending"
+
 export type ThreadListParams = PaginationParams & {
   id?: string
   title?: string
   status?: ThreadStatus
+  activity?: ThreadActivity
+  created_by?: ThreadActorFilter[]
+  last_used_by?: ThreadActorFilter[]
+  sort_by?: ThreadSortBy
+  sort_direction?: ThreadSortDirection
 }
 
 export type ThreadMessageParent = {

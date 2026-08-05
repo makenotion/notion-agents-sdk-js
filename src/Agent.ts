@@ -152,10 +152,19 @@ export class Agent {
   }
 
   async listThreads(params?: ThreadListParams): Promise<ThreadListResponse> {
-    const query: Record<string, string | number> = {}
+    const query: Record<string, string | number | string[]> = {}
     if (params?.id) query.id = params.id
     if (params?.title) query.title = params.title
     if (params?.status) query.status = params.status
+    if (params?.activity) query.activity = params.activity
+    if (params?.created_by && params.created_by.length > 0) {
+      query.created_by = params.created_by
+    }
+    if (params?.last_used_by && params.last_used_by.length > 0) {
+      query.last_used_by = params.last_used_by
+    }
+    if (params?.sort_by) query.sort_by = params.sort_by
+    if (params?.sort_direction) query.sort_direction = params.sort_direction
     if (params?.start_cursor) query.start_cursor = params.start_cursor
     if (params?.page_size) query.page_size = params.page_size
 
