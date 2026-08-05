@@ -289,7 +289,7 @@ const stream = agent.chatStream({
 Notes:
 
 - Agent message chunks may be emitted multiple times for the same `id` as more information becomes available; treat them as **upserts keyed by `id`**.
-- When `verbose: false`, agent message chunks omit `content_parts` and only return `content`.
+- By default (`verbose: true`), agent message chunks include `content_parts`, and `tool` chunks include raw tool details (`tool_name`, `tool_type`, `tool_call_id`, `agent_step_id`) in addition to the stable `category`/`status` progress fields. Pass `verbose: false` to omit `content_parts` and receive only the stable `category`/`status` fields on `tool` chunks.
 - When `metadata` is provided on the request, it is echoed back on the `started` and `done` stream chunks as `metadata`.
 
 Returns `AsyncGenerator<StreamChunk, ThreadInfo, undefined>`.

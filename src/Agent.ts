@@ -209,8 +209,8 @@ export class Agent {
     onMessage?: (message: StreamMessage) => void
   }): AsyncGenerator<StreamChunk, ThreadInfo, undefined> {
     const url = new URL(`${this.baseUrl}/v1/agents/${this.id}/chatStream`)
-    if (args.verbose === false) {
-      url.searchParams.set("verbose", "false")
+    if (args.verbose !== undefined) {
+      url.searchParams.set("verbose", String(args.verbose))
     }
 
     const response = await fetch(
