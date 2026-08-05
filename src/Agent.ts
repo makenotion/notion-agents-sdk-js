@@ -208,7 +208,7 @@ export class Agent {
     promptContext?: string
     onMessage?: (message: StreamMessage) => void
   }): AsyncGenerator<StreamChunk, ThreadInfo, undefined> {
-    const url = new URL(`${this.baseUrl}/v1/agents/${this.id}/chatStream`)
+    const url = new URL(`${this.baseUrl}/v1/agents/${this.id}/chat`)
     if (args.verbose !== undefined) {
       url.searchParams.set("verbose", String(args.verbose))
     }
@@ -218,6 +218,7 @@ export class Agent {
       {
         method: "POST",
         headers: {
+          Accept: "application/x-ndjson",
           Authorization: `Bearer ${this.auth}`,
           "Content-Type": "application/json",
           "Notion-Version": this.notionVersion,
