@@ -1,5 +1,8 @@
 import { Client } from "@notionhq/client"
 import type {
+  ChatAttachmentInput,
+  ChatInvocationResponse,
+  ChatLifecycleMetadata,
   ThreadData,
   PollThreadOptions,
   ThreadMessageListParams,
@@ -8,6 +11,7 @@ import type {
   ThreadListItem,
 } from "./types.js"
 import {
+  NotionAgentsError,
   ThreadNotFoundError,
   PollingTimeoutError,
   isObjectNotFoundErrorForType,
@@ -54,6 +58,35 @@ export class Thread {
     })
   }
 
+  async sendMessage(
+    args:
+      | {
+          message: string
+          attachments?: ChatAttachmentInput[]
+          metadata?: ChatLifecycleMetadata
+          promptContext?: string
+        }
+      | {
+          message?: string
+          attachments: ChatAttachmentInput[]
+          metadata?: ChatLifecycleMetadata
+          promptContext?: string
+        },
+  ): Promise<ChatInvocationResponse> {
+    try {
+      return await this.client.request<ChatInvocationResponse>({
+        path: `threads/${this.threadId}/messages`,
+        method: "post",
+        body: buildThreadMessageRequestBody(args),
+      })
+    } catch (error) {
+      if (isObjectNotFoundErrorForType(error, "thread")) {
+        throw new ThreadNotFoundError(this.threadId)
+      }
+      throw error
+    }
+  }
+
   async poll(options: PollThreadOptions = {}): Promise<ThreadListItem> {
     const {
       maxAttempts = 60,
@@ -96,5 +129,39 @@ export class Thread {
     }
 
     throw new PollingTimeoutError(maxAttempts)
+  }
+}
+
+function buildThreadMessageRequestBody(args: {
+  message?: string
+  attachments?: ChatAttachmentInput[]
+  metadata?: ChatLifecycleMetadata
+  promptContext?: string
+}): Record<string, unknown> {
+  const message =
+    typeof args.message === "string" && args.message.trim().length > 0
+      ? args.message
+      : undefined
+
+  const attachments =
+    args.attachments && args.attachments.length > 0
+      ? args.attachments.map((attachment) => ({
+          file_upload: { id: attachment.fileUploadId },
+          ...(attachment.name ? { name: attachment.name } : {}),
+        }))
+      : undefined
+
+  if (!message && !attachments) {
+    throw new NotionAgentsError(
+      "Either message or attachments is required.",
+      "validation_error",
+    )
+  }
+
+  return {
+    ...(message ? { message } : {}),
+    ...(attachments ? { attachments } : {}),
+    ...(args.metadata ? { metadata: args.metadata } : {}),
+    ...(args.promptContext ? { prompt_context: args.promptContext } : {}),
   }
 }

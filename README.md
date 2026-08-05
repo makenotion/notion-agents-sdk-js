@@ -158,7 +158,8 @@ console.log(threadInfo.thread_id, threadInfo.messages.length)
 
 A chat happens inside a **thread**:
 
-- `agent.chat()` creates/continues a thread and returns `{ thread_id, status: "pending" }`.
+- `agent.chat()` creates a new thread and returns `{ thread_id, status: "pending" }`.
+- `thread.sendMessage()` appends a message to an existing thread via `POST /v1/threads/:thread_id/messages`.
 - `thread.poll()` checks `GET /v1/agents/:agent_id/threads?id=<thread_id>` until the thread is `completed` or `failed`.
 - `thread.listMessages()` fetches messages from `GET /v1/threads/:thread_id/messages`.
 
@@ -247,13 +248,13 @@ An `Agent` represents a single custom agent.
 
 #### `chat(args)`
 
-Starts or continues a conversation (async invocation).
+Starts a new conversation (async invocation).
 
 ```ts
 await agent.chat({
   message?: string,
   attachments?: Array<{ fileUploadId: string, name?: string }>,
-  threadId?: string,
+  threadId?: string, // deprecated — use thread.sendMessage() instead
   metadata?: { user_id?: string },
   promptContext?: string,
 })
@@ -265,6 +266,7 @@ Attachments must reference files uploaded via the Notion **File Upload API**. Th
 
 - `metadata.user_id`: caller-provided external user identifier for lifecycle metadata and correlation. Does not change the Notion actor used for authorization.
 - `promptContext`: additional caller-provided context for the agent to consider while responding.
+- `threadId`: **deprecated**. To continue an existing thread, prefer `agent.thread(threadId).sendMessage(...)`, which calls `POST /v1/threads/:thread_id/messages`.
 
 Returns `Promise<ChatInvocationResponse>`.
 
@@ -287,7 +289,7 @@ const stream = agent.chatStream({
 Notes:
 
 - Agent message chunks may be emitted multiple times for the same `id` as more information becomes available; treat them as **upserts keyed by `id`**.
-- When `verbose: false`, agent message chunks omit `content_parts` and only return `content`.
+- By default (`verbose: true`), agent message chunks include `content_parts`, and `tool` chunks include raw tool details (`tool_name`, `tool_type`, `tool_call_id`, `agent_step_id`) in addition to the stable `category`/`status` progress fields. Pass `verbose: false` to omit `content_parts` and receive only the stable `category`/`status` fields on `tool` chunks.
 - When `metadata` is provided on the request, it is echoed back on the `started` and `done` stream chunks as `metadata`.
 
 Returns `AsyncGenerator<StreamChunk, ThreadInfo, undefined>`.
@@ -344,6 +346,25 @@ await thread.listMessages({
 ```
 
 Returns `Promise<ThreadMessageListResponse>`.
+
+#### `sendMessage(args)`
+
+Appends a message to an existing thread (async invocation). The agent is
+resolved from the thread on the server, so no `agent_id` is sent.
+
+```ts
+await thread.sendMessage({
+  message?: string,
+  attachments?: Array<{ fileUploadId: string, name?: string }>,
+  metadata?: { user_id?: string },
+  promptContext?: string,
+})
+```
+
+You must provide either a non-empty `message` or at least one `attachment`.
+
+Returns `Promise<ChatInvocationResponse>`. Prefer this over passing
+`threadId` to `agent.chat()` for continuations.
 
 ### Pagination helpers
 
