@@ -59,15 +59,17 @@ export type AgentIcon =
       custom_agent_avatar: CustomAgentAvatar
     }
 
-export type AgentType = "notion_ai" | "custom" | "database_autofill"
+export type AgentType = "notion_ai" | "custom" | "database_autofill" | "external"
 
-export type AgentModelMode = "auto" | "pinned"
+export type AgentModel =
+  | { type: "auto" }
+  | { type: "pinned"; id: string | null }
 
 export type AgentStatus = "active" | "disabled" | "deleted"
 
 export type AgentCreatedBy = {
   id: string
-  type: "user" | "bot"
+  object: "user"
 }
 
 export type AgentConnection = {
@@ -113,10 +115,28 @@ export type AgentPauseReason =
   | "needs_user_review"
   | "tool_unavailable"
 
+export type AgentTriggerScheduleEnd =
+  | { type: "date"; end_at: string }
+  | { type: "count"; occurrences: number }
+
+export type AgentTriggerSchedule = {
+  frequency: string
+  interval: number
+  weekdays?: string[]
+  monthdays?: number[]
+  week_numbers?: number[]
+  hour?: number
+  minute?: number
+  timezone?: string
+  start_date?: string
+  end?: AgentTriggerScheduleEnd
+}
+
 export type AgentTrigger = {
   type: string
   enabled: boolean
-  schedule: string | null
+  schedule?: AgentTriggerSchedule
+  config?: Record<string, unknown>
 }
 
 export type AgentData = {
@@ -127,20 +147,16 @@ export type AgentData = {
   description: string | null
   instructions_page_id: string | null
   icon: AgentIcon | null
-  agent_version: AgentVersion | null
-  model: string | null
-  model_mode: AgentModelMode | null
+  version: AgentVersion | null
+  model: AgentModel
   connections: AgentConnection[]
   tools: AgentTool[]
   permissions: AgentPermission[]
   status: AgentStatus
-  pause_reason: AgentPauseReason | null
   created_by: AgentCreatedBy | null
-  created_time: string
-  last_edited_time: string
-  last_run_at: string | null
-  credit_limit: number | null
-  triggers: AgentTrigger[]
+  created_time: string | null
+  last_edited_time: string | null
+  last_run_time: string | null
 }
 
 export type ThreadMessage = {
