@@ -273,6 +273,7 @@ export type StreamChunk =
       tool_call_id?: string | null
       tool_name?: string
       tool_type?: string
+      input?: unknown
     }
   | {
       type: "done"
