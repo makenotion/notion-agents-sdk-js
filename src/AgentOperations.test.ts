@@ -222,6 +222,113 @@ describe("AgentOperations", () => {
 
       await operations.list({ agent_ids: [] })
     })
+
+    it("should support creation-time range filters", async () => {
+      const mockResponse = mockAgentListResponse({
+        results: [mockAgentData()],
+      })
+
+      const mockClient = createMockClient(async ({ query }) => {
+        expect(query).toEqual({
+          created_after: "2026-01-01T00:00:00.000Z",
+          created_before: "2026-06-01T00:00:00.000Z",
+        })
+        return mockResponse
+      })
+
+      const operations = new AgentOperations({
+        client: mockClient,
+        auth: "test_token",
+        baseUrl: "https://api.notion.com",
+      })
+
+      await operations.list({
+        created_after: "2026-01-01T00:00:00.000Z",
+        created_before: "2026-06-01T00:00:00.000Z",
+      })
+    })
+
+    it("should support sort_by and sort_direction", async () => {
+      const mockResponse = mockAgentListResponse({
+        results: [mockAgentData()],
+      })
+
+      const mockClient = createMockClient(async ({ query }) => {
+        expect(query).toEqual({
+          sort_by: "last_used_time",
+          sort_direction: "ascending",
+        })
+        return mockResponse
+      })
+
+      const operations = new AgentOperations({
+        client: mockClient,
+        auth: "test_token",
+        baseUrl: "https://api.notion.com",
+      })
+
+      await operations.list({
+        sort_by: "last_used_time",
+        sort_direction: "ascending",
+      })
+    })
+
+    it("should support favorited filter", async () => {
+      const mockResponse = mockAgentListResponse({
+        results: [mockAgentData()],
+      })
+
+      const mockClient = createMockClient(async ({ query }) => {
+        expect(query).toEqual({ favorited: "true" })
+        return mockResponse
+      })
+
+      const operations = new AgentOperations({
+        client: mockClient,
+        auth: "test_token",
+        baseUrl: "https://api.notion.com",
+      })
+
+      await operations.list({ favorited: true })
+    })
+
+    it("should forward favorited=false", async () => {
+      const mockResponse = mockAgentListResponse({
+        results: [mockAgentData()],
+      })
+
+      const mockClient = createMockClient(async ({ query }) => {
+        expect(query).toEqual({ favorited: "false" })
+        return mockResponse
+      })
+
+      const operations = new AgentOperations({
+        client: mockClient,
+        auth: "test_token",
+        baseUrl: "https://api.notion.com",
+      })
+
+      await operations.list({ favorited: false })
+    })
+
+    it("should support has_mcp_connections filter", async () => {
+      const mockResponse = mockAgentListResponse({
+        results: [mockAgentData()],
+      })
+
+      const mockClient = createMockClient(async ({ query }) => {
+        expect(query).toEqual({ has_mcp_connections: "true" })
+        return mockResponse
+      })
+
+      const operations = new AgentOperations({
+        client: mockClient,
+        auth: "test_token",
+        baseUrl: "https://api.notion.com",
+      })
+
+      await operations.list({ has_mcp_connections: true })
+    })
   })
 
   describe("agent", () => {
