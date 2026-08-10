@@ -2,6 +2,9 @@ import type {
   AgentData,
   AgentListResponse,
   ChatInvocationResponse,
+  SessionEvent,
+  SessionEventListResponse,
+  SessionMessageEvent,
   ThreadData,
   ThreadListResponse,
   ThreadMessageListResponse,
@@ -132,6 +135,33 @@ export const mockThreadMessageListResponse = (
   object: "list",
   type: "thread_message",
   results: [mockThreadMessageItem()],
+  has_more: false,
+  next_cursor: null,
+  ...overrides,
+})
+
+export const mockSessionMessageEvent = (
+  overrides?: Partial<SessionMessageEvent>,
+): SessionMessageEvent => ({
+  object: "session_event",
+  id: "event_1",
+  session_id: "thread_456",
+  sequence: 1,
+  created_at: "2025-01-01T00:00:00.000Z",
+  type: "user.message",
+  content: [{ type: "text", text: "Hello" }],
+  created_by: null,
+  metadata: null,
+  ...overrides,
+})
+
+export const mockSessionEventListResponse = (
+  overrides?: Partial<SessionEventListResponse>,
+): SessionEventListResponse => ({
+  object: "list",
+  type: "session_event",
+  session_event: {},
+  results: [mockSessionMessageEvent()] as SessionEvent[],
   has_more: false,
   next_cursor: null,
   ...overrides,

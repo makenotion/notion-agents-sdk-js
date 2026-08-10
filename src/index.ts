@@ -17,6 +17,8 @@ export {
   collectThreads,
   iterateMessages,
   collectMessages,
+  iterateSessionEvents,
+  collectSessionEvents,
 } from "./pagination.js"
 export type {
   ThreadStatus,
@@ -72,5 +74,22 @@ export type {
   AgentCreatedByFilter,
   AgentTypeFilter,
   PersonalAgentId,
+  SessionEvent,
+  SessionEventContentBlock,
+  SessionEventCreatedBy,
+  SessionEventFilter,
+  SessionEventListResponse,
+  SessionEventQueryParams,
+  SessionEventSort,
+  SessionEventSortProperty,
+  SessionEventStatus,
+  SessionEventType,
+  SessionMessageEvent,
+  SessionStatusError,
+  SessionStatusEvent,
+  SessionStatusRequiredAction,
+  SessionThinkingEvent,
+  SessionToolResultEvent,
+  SessionToolUseEvent,
 } from "./types.js"
 export { PERSONAL_AGENT_ALIAS, PERSONAL_AGENT_ID } from "./types.js"

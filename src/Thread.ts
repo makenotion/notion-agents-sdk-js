@@ -5,6 +5,8 @@ import type {
   ChatLifecycleMetadata,
   ThreadData,
   PollThreadOptions,
+  SessionEventListResponse,
+  SessionEventQueryParams,
   ThreadMessageListParams,
   ThreadMessageListResponse,
   ThreadListResponse,
@@ -56,6 +58,31 @@ export class Thread {
       method: "get",
       query,
     })
+  }
+
+  async queryEvents(
+    params?: SessionEventQueryParams,
+  ): Promise<SessionEventListResponse> {
+    const body: Record<string, unknown> = {}
+    if (params?.filter !== undefined) body.filter = params.filter
+    if (params?.sorts !== undefined) body.sorts = params.sorts
+    if (params?.start_cursor !== undefined) {
+      body.start_cursor = params.start_cursor
+    }
+    if (params?.page_size !== undefined) body.page_size = params.page_size
+
+    try {
+      return await this.client.request<SessionEventListResponse>({
+        path: `sessions/${this.threadId}/events/query`,
+        method: "post",
+        body,
+      })
+    } catch (error) {
+      if (isObjectNotFoundErrorForType(error, "thread")) {
+        throw new ThreadNotFoundError(this.threadId)
+      }
+      throw error
+    }
   }
 
   async sendMessage(

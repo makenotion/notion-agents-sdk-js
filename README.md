@@ -191,7 +191,7 @@ If you don’t need this level of detail, prefer `verbose: false` and use `conte
 In addition to the core classes, the package exports:
 
 - `stripLangTags(text: string): string` — removes `<lang ...>` tags from agent output
-- Pagination helpers: `iterateAgents` / `collectAgents` / `iterateThreads` / `collectThreads` / `iterateMessages` / `collectMessages`
+- Pagination helpers: `iterateAgents` / `collectAgents` / `iterateThreads` / `collectThreads` / `iterateMessages` / `collectMessages` / `iterateSessionEvents` / `collectSessionEvents`
 - TypeScript types for requests/responses/streaming chunks (see `dist/index.d.ts` once built)
 
 ### `NotionAgentsClient`
@@ -347,6 +347,28 @@ await thread.listMessages({
 
 Returns `Promise<ThreadMessageListResponse>`.
 
+#### `queryEvents(params?)`
+
+Queries the committed session event history for the thread via
+`POST /v1/sessions/:session_id/events/query`. The `session_id` for the request
+is the thread's ID.
+
+```ts
+await thread.queryEvents({
+  filter?: SessionEventFilter,
+  sorts?: SessionEventSort[],
+  page_size?: number,
+  start_cursor?: string,
+})
+```
+
+Session events include user and agent messages, agent thinking, tool
+use/result lifecycle, and terminal `session.status` events. Filters support
+`id`, `type`, `sequence`, and `created_at` conditions and can be combined
+recursively with `and`/`or`. Sorts default to `sequence` ascending.
+
+Returns `Promise<SessionEventListResponse>`.
+
 #### `sendMessage(args)`
 
 Appends a message to an existing thread (async invocation). The agent is
@@ -378,6 +400,8 @@ import {
   collectThreads,
   iterateMessages,
   collectMessages,
+  iterateSessionEvents,
+  collectSessionEvents,
 } from "@notionhq/agents-client"
 ```
 
