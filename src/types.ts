@@ -403,6 +403,139 @@ export type ThreadMessageListParams = PaginationParams & {
   role?: "user" | "agent"
 }
 
+export type SessionEventType =
+  | "user.message"
+  | "agent.message"
+  | "agent.thinking"
+  | "agent.tool_use"
+  | "agent.tool_result"
+  | "session.status"
+
+export type SessionEventCreatedBy = {
+  id: string
+  type: "user" | "bot"
+} | null
+
+export type SessionEventContentBlock =
+  | { type: "text"; text: string }
+  | {
+      type: "file"
+      name: string
+      content_type: string
+      url: string
+      expiry_time?: string
+    }
+
+type SessionEventBase = {
+  object: "session_event"
+  id: string
+  session_id: string
+  sequence: number
+  created_at: string
+}
+
+export type SessionMessageEvent = SessionEventBase & {
+  type: "user.message" | "agent.message"
+  content: SessionEventContentBlock[]
+  created_by: SessionEventCreatedBy
+  metadata: Record<string, string> | null
+}
+
+export type SessionThinkingEvent = SessionEventBase & {
+  type: "agent.thinking"
+  content: Array<{ type: "text"; text: string }>
+}
+
+export type SessionToolUseEvent = SessionEventBase & {
+  type: "agent.tool_use"
+  tool_name: string
+}
+
+export type SessionToolResultEvent = SessionEventBase & {
+  type: "agent.tool_result"
+  tool_use_id: string
+  tool_name: string
+  is_error: boolean
+}
+
+export type SessionStatusRequiredAction = {
+  action_id: string
+  title: string
+  options: Array<{ id: "approve" | "reject"; label: string }>
+}
+
+export type SessionStatusError = {
+  code: string
+  message: string
+  retryable: boolean
+}
+
+export type SessionEventStatus =
+  | "requires_action"
+  | "completed"
+  | "failed"
+  | "canceled"
+  | "terminated"
+
+export type SessionStatusEvent = SessionEventBase & {
+  type: "session.status"
+  status: SessionEventStatus
+  required_actions?: SessionStatusRequiredAction[]
+  error?: SessionStatusError
+}
+
+export type SessionEvent =
+  | SessionMessageEvent
+  | SessionThinkingEvent
+  | SessionToolUseEvent
+  | SessionToolResultEvent
+  | SessionStatusEvent
+
+export type SessionEventFilter =
+  | { property: "id"; string: { equals: string } }
+  | {
+      property: "type"
+      event_type: { equals?: SessionEventType; in?: SessionEventType[] }
+    }
+  | {
+      property: "sequence"
+      number: {
+        greater_than?: number
+        greater_than_or_equal_to?: number
+        less_than?: number
+        less_than_or_equal_to?: number
+      }
+    }
+  | {
+      property: "created_at"
+      timestamp: {
+        equals?: string
+        before?: string
+        after?: string
+        on_or_before?: string
+        on_or_after?: string
+      }
+    }
+  | { and: SessionEventFilter[] }
+  | { or: SessionEventFilter[] }
+
+export type SessionEventSortProperty = "sequence" | "created_at"
+
+export type SessionEventSort = {
+  property: SessionEventSortProperty
+  direction: "ascending" | "descending"
+}
+
+export type SessionEventQueryParams = PaginationParams & {
+  filter?: SessionEventFilter
+  sorts?: SessionEventSort[]
+}
+
+export type SessionEventListResponse = PaginatedResponse<SessionEvent> & {
+  type: "session_event"
+  session_event: Record<string, never>
+}
+
 export type AgentCreatedByFilter = string | "me"
 
 export type AgentTypeFilter =

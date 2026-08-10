@@ -4,6 +4,8 @@ import { ThreadNotFoundError } from "./errors.js"
 import {
   createMockClient,
   mockChatInvocation,
+  mockSessionEventListResponse,
+  mockSessionMessageEvent,
   mockThreadListResponse,
   mockThreadListItem,
   mockThreadMessageListResponse,
@@ -275,6 +277,116 @@ describe("Thread", () => {
       ).rejects.toMatchObject({
         code: "validation_error",
         message: "Bad request.",
+      })
+    })
+  })
+
+  describe("queryEvents", () => {
+    it("should query session events for the thread", async () => {
+      const mockResponse = mockSessionEventListResponse({
+        results: [
+          mockSessionMessageEvent({
+            id: "evt_1",
+            sequence: 1,
+            type: "user.message",
+          }),
+          mockSessionMessageEvent({
+            id: "evt_2",
+            sequence: 2,
+            type: "agent.message",
+          }),
+        ],
+      })
+
+      const mockClient = createMockClient(async ({ path, method, body }) => {
+        expect(path).toBe("sessions/thread_456/events/query")
+        expect(method).toBe("post")
+        expect(body).toEqual({})
+        return mockResponse
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      const result = await thread.queryEvents()
+
+      expect(result.results).toHaveLength(2)
+      expect(result.type).toBe("session_event")
+      expect(result.session_event).toEqual({})
+    })
+
+    it("should forward filter, sorts, and pagination in body", async () => {
+      const mockResponse = mockSessionEventListResponse({
+        results: [],
+      })
+
+      const mockClient = createMockClient(async ({ body }) => {
+        expect(body).toEqual({
+          filter: {
+            or: [
+              { property: "type", event_type: { equals: "user.message" } },
+              { property: "type", event_type: { equals: "agent.message" } },
+            ],
+          },
+          sorts: [{ property: "sequence", direction: "descending" }],
+          start_cursor: "cursor_abc",
+          page_size: 10,
+        })
+        return mockResponse
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      await thread.queryEvents({
+        filter: {
+          or: [
+            { property: "type", event_type: { equals: "user.message" } },
+            { property: "type", event_type: { equals: "agent.message" } },
+          ],
+        },
+        sorts: [{ property: "sequence", direction: "descending" }],
+        start_cursor: "cursor_abc",
+        page_size: 10,
+      })
+    })
+
+    it("should throw ThreadNotFoundError when the thread does not exist", async () => {
+      const mockClient = createMockClient(async () => {
+        throw mockThreadNotFound("thread_456")
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      await expect(thread.queryEvents()).rejects.toBeInstanceOf(
+        ThreadNotFoundError,
+      )
+    })
+
+    it("should not swallow other errors", async () => {
+      const mockClient = createMockClient(async () => {
+        throw mockValidationError("Invalid start_cursor.")
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      await expect(thread.queryEvents()).rejects.toMatchObject({
+        code: "validation_error",
+        message: "Invalid start_cursor.",
       })
     })
   })
