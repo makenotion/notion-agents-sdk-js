@@ -5,6 +5,8 @@ import type {
   ChatLifecycleMetadata,
   ThreadData,
   PollThreadOptions,
+  SessionCancelParams,
+  SessionCancelResponse,
   ThreadMessageListParams,
   ThreadMessageListResponse,
   ThreadListResponse,
@@ -56,6 +58,26 @@ export class Thread {
       method: "get",
       query,
     })
+  }
+
+  async cancel(
+    params?: SessionCancelParams,
+  ): Promise<SessionCancelResponse> {
+    const body: Record<string, unknown> = {}
+    if (params?.eventId !== undefined) body.event_id = params.eventId
+
+    try {
+      return await this.client.request<SessionCancelResponse>({
+        path: `sessions/${this.threadId}/cancel`,
+        method: "post",
+        body,
+      })
+    } catch (error) {
+      if (isObjectNotFoundErrorForType(error, "thread")) {
+        throw new ThreadNotFoundError(this.threadId)
+      }
+      throw error
+    }
   }
 
   async sendMessage(

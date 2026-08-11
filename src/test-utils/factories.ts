@@ -2,6 +2,7 @@ import type {
   AgentData,
   AgentListResponse,
   ChatInvocationResponse,
+  SessionCancelResponse,
   ThreadData,
   ThreadListResponse,
   ThreadMessageListResponse,
@@ -134,6 +135,19 @@ export const mockThreadMessageListResponse = (
   results: [mockThreadMessageItem()],
   has_more: false,
   next_cursor: null,
+  ...overrides,
+})
+
+export const mockSessionCancelResponse = (
+  overrides?: Partial<SessionCancelResponse>,
+): SessionCancelResponse => ({
+  object: "session",
+  id: "thread_456",
+  agent_id: "agent_123",
+  title: "Test Thread",
+  status: "canceled",
+  created_at: "2025-01-01T00:00:00.000Z",
+  updated_at: "2025-01-01T00:01:00.000Z",
   ...overrides,
 })
 

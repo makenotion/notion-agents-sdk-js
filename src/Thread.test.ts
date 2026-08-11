@@ -4,6 +4,7 @@ import { ThreadNotFoundError } from "./errors.js"
 import {
   createMockClient,
   mockChatInvocation,
+  mockSessionCancelResponse,
   mockThreadListResponse,
   mockThreadListItem,
   mockThreadMessageListResponse,
@@ -143,6 +144,81 @@ describe("Thread", () => {
       })
 
       await thread.listMessages({ verbose: false })
+    })
+  })
+
+  describe("cancel", () => {
+    it("should cancel the active turn with an empty body", async () => {
+      const mockResponse = mockSessionCancelResponse({
+        id: "thread_456",
+        status: "canceled",
+      })
+
+      const mockClient = createMockClient(async ({ path, method, body }) => {
+        expect(path).toBe("sessions/thread_456/cancel")
+        expect(method).toBe("post")
+        expect(body).toEqual({})
+        return mockResponse
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      const result = await thread.cancel()
+
+      expect(result).toEqual(mockResponse)
+      expect(result.status).toBe("canceled")
+    })
+
+    it("should scope cancellation to a specific event", async () => {
+      const mockResponse = mockSessionCancelResponse()
+
+      const mockClient = createMockClient(async ({ body }) => {
+        expect(body).toEqual({ event_id: "event_789" })
+        return mockResponse
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      await thread.cancel({ eventId: "event_789" })
+    })
+
+    it("should throw ThreadNotFoundError when the session doesn't exist", async () => {
+      const mockClient = createMockClient(async () => {
+        throw mockThreadNotFound("thread_456")
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      await expect(thread.cancel()).rejects.toBeInstanceOf(ThreadNotFoundError)
+    })
+
+    it("should not swallow non-thread-not-found errors", async () => {
+      const mockClient = createMockClient(async () => {
+        throw mockValidationError("Bad request.")
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      await expect(thread.cancel()).rejects.toMatchObject({
+        code: "validation_error",
+        message: "Bad request.",
+      })
     })
   })
 

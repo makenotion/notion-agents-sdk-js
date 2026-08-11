@@ -366,6 +366,22 @@ You must provide either a non-empty `message` or at least one `attachment`.
 Returns `Promise<ChatInvocationResponse>`. Prefer this over passing
 `threadId` to `agent.chat()` for continuations.
 
+#### `cancel(params?)`
+
+Cancels the current nonterminal turn in the session, optionally scoped to
+the turn identified by a session event. Calls `POST
+/v1/sessions/:session_id/cancel`.
+
+```ts
+await thread.cancel({
+  eventId?: string, // omit to cancel the current nonterminal turn
+})
+```
+
+Returns `Promise<SessionCancelResponse>` — the canonical session with its
+current `status` (for example `"canceled"` when a cancellation was
+applied, or the terminal status the session was already in).
+
 ### Pagination helpers
 
 The SDK exports pagination helpers that automatically manage `start_cursor`:
