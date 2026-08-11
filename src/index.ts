@@ -2,6 +2,7 @@ export { NotionAgentsClient } from "./NotionAgentsClient.js"
 export { Agent } from "./Agent.js"
 export { Thread } from "./Thread.js"
 export { AgentOperations } from "./AgentOperations.js"
+export { SessionOperations } from "./SessionOperations.js"
 export {
   NotionAgentsError,
   AgentNotFoundError,
@@ -17,6 +18,8 @@ export {
   collectThreads,
   iterateMessages,
   collectMessages,
+  iterateSessions,
+  collectSessions,
 } from "./pagination.js"
 export type {
   ThreadStatus,
@@ -72,5 +75,18 @@ export type {
   AgentCreatedByFilter,
   AgentTypeFilter,
   PersonalAgentId,
+  Session,
+  SessionCreatedBy,
+  SessionError,
+  SessionFilter,
+  SessionListResponse,
+  SessionModels,
+  SessionQueryParams,
+  SessionRequiredAction,
+  SessionRequiredActionOption,
+  SessionSort,
+  SessionSortProperty,
+  SessionStatus,
+  SessionTimestampCondition,
 } from "./types.js"
 export { PERSONAL_AGENT_ALIAS, PERSONAL_AGENT_ID } from "./types.js"

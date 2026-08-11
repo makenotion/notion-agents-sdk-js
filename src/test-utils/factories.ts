@@ -2,6 +2,8 @@ import type {
   AgentData,
   AgentListResponse,
   ChatInvocationResponse,
+  Session,
+  SessionListResponse,
   ThreadData,
   ThreadListResponse,
   ThreadMessageListResponse,
@@ -132,6 +134,32 @@ export const mockThreadMessageListResponse = (
   object: "list",
   type: "thread_message",
   results: [mockThreadMessageItem()],
+  has_more: false,
+  next_cursor: null,
+  ...overrides,
+})
+
+export const mockSession = (overrides?: Partial<Session>): Session => ({
+  object: "session",
+  id: "session_123",
+  agent_id: "agent_123",
+  title: "Test Session",
+  status: "in_progress",
+  created_by: { id: "user_789", type: "bot" },
+  agent_version: null,
+  models: { type: "auto" },
+  created_at: "2025-01-01T00:00:00.000Z",
+  updated_at: "2025-01-01T00:00:00.000Z",
+  ...overrides,
+})
+
+export const mockSessionListResponse = (
+  overrides?: Partial<SessionListResponse>,
+): SessionListResponse => ({
+  object: "list",
+  type: "session",
+  session: {},
+  results: [mockSession()],
   has_more: false,
   next_cursor: null,
   ...overrides,
