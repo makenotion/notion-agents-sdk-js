@@ -1,9 +1,11 @@
 import { Client } from "@notionhq/client"
 import { AgentOperations } from "./AgentOperations.js"
+import { SessionOperations } from "./SessionOperations.js"
 import type { ClientOptions } from "./types.js"
 
 export class NotionAgentsClient extends Client {
   public readonly agents: AgentOperations
+  public readonly sessions: SessionOperations
 
   constructor(options: ClientOptions) {
     if (!options.auth || options.auth.trim() === "") {
@@ -26,6 +28,10 @@ export class NotionAgentsClient extends Client {
       auth: options.auth,
       baseUrl,
       notionVersion,
+    })
+
+    this.sessions = new SessionOperations({
+      client: this,
     })
   }
 }

@@ -191,7 +191,7 @@ If you don’t need this level of detail, prefer `verbose: false` and use `conte
 In addition to the core classes, the package exports:
 
 - `stripLangTags(text: string): string` — removes `<lang ...>` tags from agent output
-- Pagination helpers: `iterateAgents` / `collectAgents` / `iterateThreads` / `collectThreads` / `iterateMessages` / `collectMessages`
+- Pagination helpers: `iterateAgents` / `collectAgents` / `iterateThreads` / `collectThreads` / `iterateMessages` / `collectMessages` / `iterateSessions` / `collectSessions`
 - TypeScript types for requests/responses/streaming chunks (see `dist/index.d.ts` once built)
 
 ### `NotionAgentsClient`
@@ -210,6 +210,7 @@ Notes:
 
 - Extends `@notionhq/client`’s `Client`, so you can also call `client.pages`, `client.databases`, etc.
 - Adds `client.agents` for agent-specific operations.
+- Adds `client.sessions` for cross-agent session search.
 
 ### `client.agents` (`AgentOperations`)
 
@@ -366,6 +367,34 @@ You must provide either a non-empty `message` or at least one `attachment`.
 Returns `Promise<ChatInvocationResponse>`. Prefer this over passing
 `threadId` to `agent.chat()` for continuations.
 
+### `client.sessions` (`SessionOperations`)
+
+#### `query(params?)`
+
+Searches sessions across every agent the integration can access via
+`POST /v1/sessions/query`.
+
+```ts
+await client.sessions.query({
+  query?: string,
+  filter?: SessionFilter,
+  sorts?: Array<{
+    property: "created_at" | "updated_at",
+    direction: "ascending" | "descending",
+  }>,
+  page_size?: number,
+  start_cursor?: string,
+})
+```
+
+- `query`: case-insensitive substring search over session titles.
+- `filter`: session property filter, or an `and`/`or` compound filter nested up
+  to two levels deep. Supports `id`, `agent_id`, `status`, `created_at`, and
+  `updated_at` conditions.
+- `sorts`: ordered sort precedence (defaults to `updated_at` descending).
+
+Returns `Promise<SessionListResponse>`.
+
 ### Pagination helpers
 
 The SDK exports pagination helpers that automatically manage `start_cursor`:
@@ -378,6 +407,8 @@ import {
   collectThreads,
   iterateMessages,
   collectMessages,
+  iterateSessions,
+  collectSessions,
 } from "@notionhq/agents-client"
 ```
 

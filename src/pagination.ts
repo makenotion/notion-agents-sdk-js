@@ -5,6 +5,8 @@ import type { Thread } from "./Thread.js"
 import type {
   AgentListParams,
   AgentData,
+  Session,
+  SessionQueryParams,
   ThreadListParams,
   ThreadListItem,
   ThreadMessageListParams,
@@ -164,6 +166,57 @@ export function collectMessages(
 ): Promise<ThreadMessageItem[]> {
   return collectPaginatedAPI(
     (args: ThreadMessageListParams) => thread.listMessages(args),
+    params || {},
+  )
+}
+
+/**
+ * Returns an async iterator over all sessions accessible to the integration.
+ *
+ * Automatically handles pagination, yielding sessions one at a time.
+ *
+ * @param client - Notion agents client instance
+ * @param params - Optional query, filter, sort, and pagination parameters
+ *   (start_cursor will be managed automatically)
+ *
+ * @example
+ * ```typescript
+ * for await (const session of iterateSessions(client, { query: "sales" })) {
+ *   console.log(session.title)
+ * }
+ * ```
+ */
+export function iterateSessions(
+  client: NotionAgentsClient,
+  params?: Omit<SessionQueryParams, "start_cursor">,
+): AsyncIterableIterator<Session> {
+  return iteratePaginatedAPI(
+    (args: SessionQueryParams) => client.sessions.query(args),
+    params || {},
+  )
+}
+
+/**
+ * Collects all sessions accessible to the integration into an in-memory array.
+ *
+ * Automatically handles pagination, returning all results at once.
+ *
+ * @param client - Notion agents client instance
+ * @param params - Optional query, filter, sort, and pagination parameters
+ *   (start_cursor will be managed automatically)
+ *
+ * @example
+ * ```typescript
+ * const allSessions = await collectSessions(client)
+ * console.log(`Found ${allSessions.length} sessions`)
+ * ```
+ */
+export function collectSessions(
+  client: NotionAgentsClient,
+  params?: Omit<SessionQueryParams, "start_cursor">,
+): Promise<Session[]> {
+  return collectPaginatedAPI(
+    (args: SessionQueryParams) => client.sessions.query(args),
     params || {},
   )
 }
