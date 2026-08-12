@@ -403,6 +403,48 @@ export type ThreadMessageListParams = PaginationParams & {
   role?: "user" | "agent"
 }
 
+export type SessionStatus =
+  | "queued"
+  | "in_progress"
+  | "requires_action"
+  | "completed"
+  | "failed"
+  | "canceled"
+  | "terminated"
+
+export type SessionRequiredActionOption = {
+  id: "approve" | "reject"
+  label: string
+}
+
+export type SessionRequiredAction = {
+  action_id: string
+  title: string
+  options: SessionRequiredActionOption[]
+}
+
+export type SessionError = {
+  code: string
+  message: string
+  retryable: boolean
+}
+
+export type SessionCancelParams = {
+  eventId?: string
+}
+
+export type SessionCancelResponse = {
+  object: "session"
+  id: string
+  agent_id: string
+  title: string
+  status: SessionStatus
+  created_at: string
+  updated_at: string
+  required_actions?: SessionRequiredAction[]
+  error?: SessionError
+}
+
 export type AgentCreatedByFilter = string | "me"
 
 export type AgentTypeFilter =
