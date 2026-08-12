@@ -60,9 +60,7 @@ export class Thread {
     })
   }
 
-  async cancel(
-    params?: SessionCancelParams,
-  ): Promise<SessionCancelResponse> {
+  async cancel(params?: SessionCancelParams): Promise<SessionCancelResponse> {
     const body: Record<string, unknown> = {}
     if (params?.eventId !== undefined) body.event_id = params.eventId
 
