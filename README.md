@@ -266,7 +266,7 @@ You must provide either a non-empty `message` or at least one `attachment`.
 
 Attachments must reference files uploaded via the Notion **File Upload API**. The agent runtime may surface attachments back to you as signed URLs (with an `expiry_time`) in user message chunks and in `listMessages()` responses.
 
-- `metadata`: caller-provided string metadata persisted with the user message. `metadata.user_id` is an external user identifier used for lifecycle correlation; it does not change the Notion actor used for authorization.
+- `metadata`: caller-provided string metadata persisted with the user message, up to 20 entries with each value at most 2,000 characters. `metadata.user_id` is an external user identifier used for lifecycle correlation; it does not change the Notion actor used for authorization.
 - `promptContext`: additional caller-provided context for the agent to consider while responding.
 - `threadId`: **deprecated**. To continue an existing thread, prefer `agent.thread(threadId).sendMessage(...)`, which calls `POST /v1/threads/:thread_id/messages`.
 
