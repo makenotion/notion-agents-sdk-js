@@ -33,6 +33,7 @@ export class AgentOperations {
     if (args?.created_by && args.created_by.length > 0) {
       query.created_by = args.created_by
     }
+    if (args?.verbose !== undefined) query.verbose = String(args.verbose)
     if (args?.start_cursor) query.start_cursor = args.start_cursor
     if (args?.page_size) query.page_size = args.page_size
 

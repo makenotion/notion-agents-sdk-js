@@ -223,6 +223,7 @@ await client.agents.list({
   agent_type?: Array<"notion_ai" | "custom_agent" | "autofill_custom_agent" | "external">,
   agent_ids?: string[],
   created_by?: Array<string | "me">,
+  verbose?: boolean, // default false
   page_size?: number,
   start_cursor?: string,
 })
@@ -231,6 +232,7 @@ await client.agents.list({
 - `agent_type`: filter agents by one or more agent types.
 - `agent_ids`: filter agents by one or more agent IDs.
 - `created_by`: filter agents by one or more creator user IDs. Use `"me"` for the user associated with the API token.
+- `verbose`: when `true`, each agent includes an `instructions` field with its inline instructions, or `null` when the instructions are stored on a page (see `instructions_page_id`).
 
 Returns `Promise<AgentListResponse>`.
 
@@ -255,7 +257,7 @@ await agent.chat({
   message?: string,
   attachments?: Array<{ fileUploadId: string, name?: string }>,
   threadId?: string, // deprecated — use thread.sendMessage() instead
-  metadata?: { user_id?: string },
+  metadata?: Record<string, string>,
   promptContext?: string,
 })
 ```
@@ -264,7 +266,7 @@ You must provide either a non-empty `message` or at least one `attachment`.
 
 Attachments must reference files uploaded via the Notion **File Upload API**. The agent runtime may surface attachments back to you as signed URLs (with an `expiry_time`) in user message chunks and in `listMessages()` responses.
 
-- `metadata.user_id`: caller-provided external user identifier for lifecycle metadata and correlation. Does not change the Notion actor used for authorization.
+- `metadata`: caller-provided string metadata persisted with the user message. `metadata.user_id` is an external user identifier used for lifecycle correlation; it does not change the Notion actor used for authorization.
 - `promptContext`: additional caller-provided context for the agent to consider while responding.
 - `threadId`: **deprecated**. To continue an existing thread, prefer `agent.thread(threadId).sendMessage(...)`, which calls `POST /v1/threads/:thread_id/messages`.
 
@@ -280,7 +282,7 @@ const stream = agent.chatStream({
   attachments?: Array<{ fileUploadId: string, name?: string }>,
   threadId?: string,
   verbose?: boolean, // default true
-  metadata?: { user_id?: string },
+  metadata?: Record<string, string>,
   promptContext?: string,
   onMessage?: (message: StreamMessage) => void,
 })
@@ -356,7 +358,7 @@ resolved from the thread on the server, so no `agent_id` is sent.
 await thread.sendMessage({
   message?: string,
   attachments?: Array<{ fileUploadId: string, name?: string }>,
-  metadata?: { user_id?: string },
+  metadata?: Record<string, string>,
   promptContext?: string,
 })
 ```

@@ -141,6 +141,12 @@ export type AgentData = {
   last_run_at: string | null
   credit_limit: number | null
   triggers: AgentTrigger[]
+  /**
+   * The agent's inline instructions. Only present when the request was made
+   * with `verbose: true`, and `null` when the instructions are stored on a
+   * page (see `instructions_page_id`).
+   */
+  instructions?: string | null
 }
 
 export type ThreadMessage = {
@@ -153,9 +159,11 @@ export type ChatAttachmentInput = {
   name?: string
 }
 
-export type ChatLifecycleMetadata = {
-  user_id?: string
-}
+/**
+ * Caller-provided string metadata persisted with the user message. `user_id`
+ * is used for lifecycle correlation and does not change authorization.
+ */
+export type ChatLifecycleMetadata = Record<string, string>
 
 export type ThreadMessageAttachment = {
   name: string
@@ -416,4 +424,5 @@ export type AgentListParams = PaginationParams & {
   agent_type?: AgentTypeFilter[]
   agent_ids?: string[]
   created_by?: AgentCreatedByFilter[]
+  verbose?: boolean
 }
