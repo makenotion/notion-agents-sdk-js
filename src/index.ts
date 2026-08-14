@@ -29,6 +29,7 @@ export type {
   AgentData,
   AgentType,
   AgentModelMode,
+  AgentModel,
   AgentStatus,
   AgentCreatedBy,
   AgentConnection,

@@ -63,6 +63,15 @@ export type AgentType = "notion_ai" | "custom" | "database_autofill"
 
 export type AgentModelMode = "auto" | "pinned"
 
+/**
+ * The model an agent runs on: `auto` when Notion picks the model per turn, or
+ * `pinned` with the public model the agent maps to (`id` is `null` for a
+ * pre-release / early-access model, which stays opaque).
+ */
+export type AgentModel =
+  | { mode: "auto" }
+  | { mode: "pinned"; id: string | null }
+
 export type AgentStatus = "active" | "disabled" | "deleted"
 
 export type AgentCreatedBy = {
@@ -128,8 +137,7 @@ export type AgentData = {
   instructions_page_id: string | null
   icon: AgentIcon | null
   agent_version: AgentVersion | null
-  model: string | null
-  model_mode: AgentModelMode | null
+  model: AgentModel
   connections: AgentConnection[]
   tools: AgentTool[]
   permissions: AgentPermission[]
