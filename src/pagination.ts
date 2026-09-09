@@ -5,6 +5,8 @@ import type { Thread } from "./Thread.js"
 import type {
   AgentListParams,
   AgentData,
+  SessionEvent,
+  SessionEventQueryParams,
   ThreadListParams,
   ThreadListItem,
   ThreadMessageListParams,
@@ -164,6 +166,59 @@ export function collectMessages(
 ): Promise<ThreadMessageItem[]> {
   return collectPaginatedAPI(
     (args: ThreadMessageListParams) => thread.listMessages(args),
+    params || {},
+  )
+}
+
+/**
+ * Returns an async iterator over all session events for a thread.
+ *
+ * Automatically handles pagination, yielding events one at a time.
+ *
+ * @param thread - Thread instance
+ * @param params - Optional filter, sort, and pagination parameters
+ *   (start_cursor will be managed automatically)
+ *
+ * @example
+ * ```typescript
+ * const thread = agent.thread(threadId)
+ * for await (const event of iterateSessionEvents(thread)) {
+ *   console.log(event.type, event.sequence)
+ * }
+ * ```
+ */
+export function iterateSessionEvents(
+  thread: Thread,
+  params?: Omit<SessionEventQueryParams, "start_cursor">,
+): AsyncIterableIterator<SessionEvent> {
+  return iteratePaginatedAPI(
+    (args: SessionEventQueryParams) => thread.queryEvents(args),
+    params || {},
+  )
+}
+
+/**
+ * Collects all session events for a thread into an in-memory array.
+ *
+ * Automatically handles pagination, returning all results at once.
+ *
+ * @param thread - Thread instance
+ * @param params - Optional filter, sort, and pagination parameters
+ *   (start_cursor will be managed automatically)
+ *
+ * @example
+ * ```typescript
+ * const thread = agent.thread(threadId)
+ * const allEvents = await collectSessionEvents(thread)
+ * console.log(`Session has ${allEvents.length} events`)
+ * ```
+ */
+export function collectSessionEvents(
+  thread: Thread,
+  params?: Omit<SessionEventQueryParams, "start_cursor">,
+): Promise<SessionEvent[]> {
+  return collectPaginatedAPI(
+    (args: SessionEventQueryParams) => thread.queryEvents(args),
     params || {},
   )
 }

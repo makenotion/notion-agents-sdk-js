@@ -12,6 +12,8 @@ export {
   mockAgentData,
   mockAgentListResponse,
   mockChatInvocation,
+  mockSessionEventListResponse,
+  mockSessionMessageEvent,
   mockThreadData,
   mockThreadListItem,
   mockThreadListResponse,
