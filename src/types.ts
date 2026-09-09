@@ -317,6 +317,77 @@ export type PollThreadOptions = {
   onThreadNotFound?: (attempt: number) => void
 }
 
+export type SessionCreatedBy = {
+  id: string
+  type: "user" | "bot"
+}
+
+export type SessionModels =
+  | { type: "auto" }
+  | { type: "pinned"; ids: Array<string | null> }
+
+export type Session = {
+  object: "session"
+  id: string
+  agent_id: string
+  title: string
+  status: SessionStatus
+  created_by: SessionCreatedBy
+  agent_version: AgentVersion | null
+  models: SessionModels
+  created_at: string
+  updated_at: string
+  required_actions?: SessionRequiredAction[]
+  error?: SessionError
+  trigger_type?: string
+  type_labels?: string[] | null
+  chat_user_emails?: string[] | null
+  tool_types?: string[] | null
+  tool_call_count?: number | null
+  credits_used?: number | null
+  runs_completed?: number | null
+  message_count?: number | null
+}
+
+export type SessionTimestampCondition = {
+  before?: string
+  after?: string
+  on_or_before?: string
+  on_or_after?: string
+}
+
+export type SessionFilter =
+  | { property: "id"; string: { equals: string } }
+  | { property: "agent_id"; string: { equals: string } }
+  | {
+      property: "status"
+      status: { equals?: SessionStatus; in?: SessionStatus[] }
+    }
+  | {
+      property: "created_at" | "updated_at"
+      timestamp: SessionTimestampCondition
+    }
+  | { and: SessionFilter[] }
+  | { or: SessionFilter[] }
+
+export type SessionSortProperty = "created_at" | "updated_at"
+
+export type SessionSort = {
+  property: SessionSortProperty
+  direction: "ascending" | "descending"
+}
+
+export type SessionQueryParams = PaginationParams & {
+  query?: string
+  filter?: SessionFilter
+  sorts?: SessionSort[]
+}
+
+export type SessionListResponse = PaginatedResponse<Session> & {
+  type: "session"
+  session: Record<string, never>
+}
+
 export type ClientOptions = {
   auth: string
   baseUrl?: string
@@ -403,6 +474,21 @@ export type ThreadMessageListParams = PaginationParams & {
   role?: "user" | "agent"
 }
 
+export type AgentCreatedByFilter = string | "me"
+
+export type AgentTypeFilter =
+  | "notion_ai"
+  | "custom_agent"
+  | "autofill_custom_agent"
+  | "external"
+
+export type AgentListParams = PaginationParams & {
+  name?: string
+  agent_type?: AgentTypeFilter[]
+  agent_ids?: string[]
+  created_by?: AgentCreatedByFilter[]
+}
+
 export type SessionStatus =
   | "queued"
   | "in_progress"
@@ -411,15 +497,6 @@ export type SessionStatus =
   | "failed"
   | "canceled"
   | "terminated"
-
-export type SessionCreatedBy = {
-  id: string
-  type: "user" | "bot"
-}
-
-export type SessionModels =
-  | { type: "auto" }
-  | { type: "pinned"; ids: Array<string | null> }
 
 export type SessionRequiredActionOption = {
   id: "approve" | "reject"
@@ -436,81 +513,4 @@ export type SessionError = {
   code: string
   message: string
   retryable: boolean
-}
-
-export type Session = {
-  object: "session"
-  id: string
-  agent_id: string
-  title: string
-  status: SessionStatus
-  created_by: SessionCreatedBy
-  agent_version: AgentVersion | null
-  models: SessionModels
-  created_at: string
-  updated_at: string
-  required_actions?: SessionRequiredAction[]
-  error?: SessionError
-  trigger_type?: string
-  type_labels?: string[] | null
-  chat_user_emails?: string[] | null
-  tool_types?: string[] | null
-  tool_call_count?: number | null
-  credits_used?: number | null
-  runs_completed?: number | null
-  message_count?: number | null
-}
-
-export type SessionTimestampCondition = {
-  before?: string
-  after?: string
-  on_or_before?: string
-  on_or_after?: string
-}
-
-export type SessionFilter =
-  | { property: "id"; string: { equals: string } }
-  | { property: "agent_id"; string: { equals: string } }
-  | {
-      property: "status"
-      status: { equals?: SessionStatus; in?: SessionStatus[] }
-    }
-  | {
-      property: "created_at" | "updated_at"
-      timestamp: SessionTimestampCondition
-    }
-  | { and: SessionFilter[] }
-  | { or: SessionFilter[] }
-
-export type SessionSortProperty = "created_at" | "updated_at"
-
-export type SessionSort = {
-  property: SessionSortProperty
-  direction: "ascending" | "descending"
-}
-
-export type SessionQueryParams = PaginationParams & {
-  query?: string
-  filter?: SessionFilter
-  sorts?: SessionSort[]
-}
-
-export type SessionListResponse = PaginatedResponse<Session> & {
-  type: "session"
-  session: Record<string, never>
-}
-
-export type AgentCreatedByFilter = string | "me"
-
-export type AgentTypeFilter =
-  | "notion_ai"
-  | "custom_agent"
-  | "autofill_custom_agent"
-  | "external"
-
-export type AgentListParams = PaginationParams & {
-  name?: string
-  agent_type?: AgentTypeFilter[]
-  agent_ids?: string[]
-  created_by?: AgentCreatedByFilter[]
 }

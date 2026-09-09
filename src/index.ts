@@ -22,6 +22,15 @@ export {
   collectSessions,
 } from "./pagination.js"
 export type {
+  Session,
+  SessionCreatedBy,
+  SessionFilter,
+  SessionListResponse,
+  SessionModels,
+  SessionQueryParams,
+  SessionSort,
+  SessionSortProperty,
+  SessionTimestampCondition,
   ThreadStatus,
   AgentVersion,
   ExternalUrl,
@@ -75,18 +84,12 @@ export type {
   AgentCreatedByFilter,
   AgentTypeFilter,
   PersonalAgentId,
-  Session,
-  SessionCreatedBy,
-  SessionError,
-  SessionFilter,
-  SessionListResponse,
-  SessionModels,
-  SessionQueryParams,
-  SessionRequiredAction,
-  SessionRequiredActionOption,
-  SessionSort,
-  SessionSortProperty,
-  SessionStatus,
-  SessionTimestampCondition,
 } from "./types.js"
 export { PERSONAL_AGENT_ALIAS, PERSONAL_AGENT_ID } from "./types.js"
+
+export type {
+  SessionStatus,
+  SessionRequiredActionOption,
+  SessionRequiredAction,
+  SessionError,
+} from "./types.js"
