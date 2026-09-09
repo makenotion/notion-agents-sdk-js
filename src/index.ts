@@ -13,13 +13,13 @@ export {
 export { stripLangTags, isPersonalAgent } from "./utils.js"
 export {
   iterateAgents,
+  iterateSessions,
+  collectSessions,
   collectAgents,
   iterateThreads,
   collectThreads,
   iterateMessages,
   collectMessages,
-  iterateSessions,
-  collectSessions,
 } from "./pagination.js"
 export type {
   Session,

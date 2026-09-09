@@ -5,9 +5,9 @@ import type { Thread } from "./Thread.js"
 import type {
   AgentListParams,
   AgentData,
+  ThreadListParams,
   Session,
   SessionQueryParams,
-  ThreadListParams,
   ThreadListItem,
   ThreadMessageListParams,
   ThreadMessageItem,
