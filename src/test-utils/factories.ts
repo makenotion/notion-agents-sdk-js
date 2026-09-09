@@ -160,7 +160,6 @@ export const mockSessionEventListResponse = (
 ): SessionEventListResponse => ({
   object: "list",
   type: "session_event",
-  session_event: {},
   results: [mockSessionMessageEvent()] as SessionEvent[],
   has_more: false,
   next_cursor: null,
