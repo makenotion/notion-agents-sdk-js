@@ -158,6 +158,12 @@ export type AgentData = {
   agent_type: AgentType
   name: string
   description: string | null
+  /**
+   * The agent's inline instructions. Only present when the request was made
+   * with `verbose: true`, and `null` when the instructions are stored on a
+   * page (see `instructions_page_id`).
+   */
+  instructions?: string | null
   instructions_page_id: string | null
   icon: AgentIcon | null
   agent_version: AgentVersion | null
@@ -174,12 +180,6 @@ export type AgentData = {
   last_run_at: string | null
   credit_limit: number | null
   triggers: AgentTrigger[]
-  /**
-   * The agent's inline instructions. Only present when the request was made
-   * with `verbose: true`, and `null` when the instructions are stored on a
-   * page (see `instructions_page_id`).
-   */
-  instructions?: string | null
 }
 
 export type ThreadMessage = {
