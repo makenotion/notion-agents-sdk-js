@@ -211,6 +211,14 @@ export type StreamMessage =
       content_parts?: AgentContentPart[]
     }
 
+export type ContinueThreadArgs =
+  | { actionId: string; optionId: "approve" | "reject" }
+  | {
+      actionId: string
+      optionId: "use_connection"
+      input: { connectionId: string }
+    }
+
 export type PendingUserActionRequirement =
   | { type: "general" }
   | {
@@ -460,14 +468,6 @@ export type ThreadMessageListParams = PaginationParams & {
   verbose?: boolean
   role?: "user" | "agent"
 }
-
-export type ContinueThreadArgs =
-  | { actionId: string; optionId: "approve" | "reject" }
-  | {
-      actionId: string
-      optionId: "use_connection"
-      input: { connectionId: string }
-    }
 
 export type AgentCreatedByFilter = string | "me"
 

@@ -55,6 +55,10 @@ export type {
   ThreadMessageParent,
   ToolResult,
   PollThreadOptions,
+  PendingUserAction,
+  PendingUserActionOption,
+  PendingUserActionRequirement,
+  ContinueThreadArgs,
   ClientOptions,
   PaginationParams,
   PaginatedResponse,
@@ -72,9 +76,5 @@ export type {
   AgentCreatedByFilter,
   AgentTypeFilter,
   PersonalAgentId,
-  PendingUserAction,
-  PendingUserActionOption,
-  PendingUserActionRequirement,
-  ContinueThreadArgs,
 } from "./types.js"
 export { PERSONAL_AGENT_ALIAS, PERSONAL_AGENT_ID } from "./types.js"
