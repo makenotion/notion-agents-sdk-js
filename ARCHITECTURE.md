@@ -8,8 +8,10 @@ The SDK is organized into clean, focused classes:
 
 ```text
 NotionAgentsClient (extends Notion Client)
-  └── agents: AgentOperations
-        └── list() → Agent[]
+  ├── agents: AgentOperations
+  │     └── list() → Agent[]
+  └── sessions: SessionOperations
+        └── query() → Session[]
 
 Agent
   ├── chat()
@@ -115,6 +117,7 @@ src/
 ├── Thread.ts                # Thread class
 ├── Agent.ts                 # Agent class
 ├── AgentOperations.ts       # Agent listing and management
+├── SessionOperations.ts     # Cross-agent session search
 ├── NotionAgentsClient.ts    # Main client
 └── index.ts                 # Public exports
 ```

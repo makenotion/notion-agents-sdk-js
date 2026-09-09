@@ -10,6 +10,8 @@ export {
 
 export {
   mockAgentData,
+  mockSession,
+  mockSessionListResponse,
   mockAgentListResponse,
   mockChatInvocation,
   mockSessionEventListResponse,

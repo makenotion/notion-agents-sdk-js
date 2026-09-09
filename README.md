@@ -210,6 +210,7 @@ Notes:
 
 - Extends `@notionhq/client`’s `Client`, so you can also call `client.pages`, `client.databases`, etc.
 - Adds `client.agents` for agent-specific operations.
+- Adds `client.sessions` for cross-agent session search.
 
 ### `client.agents` (`AgentOperations`)
 
@@ -303,6 +304,34 @@ await agent.pollThread(threadId)     // == agent.thread(threadId).poll()
 await agent.continueThread(threadId, {...}) // == agent.thread(threadId).continue({...})
 await agent.listThreads({...})       // list/paginate/filter threads
 ```
+
+### `client.sessions` (`SessionOperations`)
+
+#### `query(params?)`
+
+Searches sessions across every agent the integration can access via
+`POST /v1/sessions/query`.
+
+```ts
+await client.sessions.query({
+  query?: string,
+  filter?: SessionFilter,
+  sorts?: Array<{
+    property: "created_at" | "updated_at",
+    direction: "ascending" | "descending",
+  }>,
+  page_size?: number,
+  start_cursor?: string,
+})
+```
+
+- `query`: case-insensitive substring search over session titles.
+- `filter`: session property filter, or an `and`/`or` compound filter nested up
+  to two levels deep. Supports `id`, `agent_id`, `status`, `created_at`, and
+  `updated_at` conditions.
+- `sorts`: ordered sort precedence (defaults to `updated_at` descending).
+
+Returns `Promise<SessionListResponse>`.
 
 ### `Thread`
 
@@ -426,6 +455,8 @@ The SDK exports pagination helpers that automatically manage `start_cursor`:
 
 ```ts
 import {
+  iterateSessions,
+  collectSessions,
   iterateAgents,
   collectAgents,
   iterateThreads,
