@@ -72,7 +72,8 @@ export type AgentStatus = "active" | "disabled" | "deleted"
 
 export type AgentCreatedBy = {
   id: string
-  type: "user" | "bot"
+  object: "user"
+  type: "user"
 }
 
 export type AgentConnection = {
@@ -136,16 +137,11 @@ export type AgentData = {
   model: string | null
   model_mode: AgentModelMode | null
   connections: AgentConnection[]
-  tools: AgentTool[]
-  permissions: AgentPermission[]
   status: AgentStatus
-  pause_reason: AgentPauseReason | null
   created_by: AgentCreatedBy | null
-  created_time: string
-  last_edited_time: string
+  created_time: string | null
+  last_edited_time: string | null
   last_run_at: string | null
-  credit_limit: number | null
-  triggers: AgentTrigger[]
 }
 
 export type ThreadMessage = {

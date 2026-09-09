@@ -34,16 +34,11 @@ export const mockAgentData = (overrides?: Partial<AgentData>): AgentData => ({
   model: null,
   model_mode: null,
   connections: [],
-  tools: [],
-  permissions: [],
   status: "active",
-  pause_reason: null,
   created_by: null,
   created_time: "2025-01-01T00:00:00.000Z",
   last_edited_time: "2025-01-01T00:00:00.000Z",
   last_run_at: null,
-  credit_limit: null,
-  triggers: [],
   ...overrides,
 })
 
