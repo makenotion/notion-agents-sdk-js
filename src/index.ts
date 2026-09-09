@@ -68,10 +68,6 @@ export type {
   ThreadMessageItem,
   ThreadMessageListResponse,
   ThreadMessageListParams,
-  SessionStatus,
-  SessionRequiredActionOption,
-  SessionRequiredAction,
-  SessionError,
   SessionCancelParams,
   SessionCancelResponse,
   AgentListParams,
@@ -80,3 +76,10 @@ export type {
   PersonalAgentId,
 } from "./types.js"
 export { PERSONAL_AGENT_ALIAS, PERSONAL_AGENT_ID } from "./types.js"
+
+export type {
+  SessionStatus,
+  SessionRequiredActionOption,
+  SessionRequiredAction,
+  SessionError,
+} from "./types.js"

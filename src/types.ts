@@ -148,6 +148,22 @@ export type ThreadMessage = {
   content: string
 }
 
+export type SessionCancelParams = {
+  eventId?: string
+}
+
+export type SessionCancelResponse = {
+  object: "session"
+  id: string
+  agent_id: string
+  title: string
+  status: SessionStatus
+  created_at: string
+  updated_at: string
+  required_actions?: SessionRequiredAction[]
+  error?: SessionError
+}
+
 export type ChatAttachmentInput = {
   fileUploadId: string
   name?: string
@@ -403,6 +419,21 @@ export type ThreadMessageListParams = PaginationParams & {
   role?: "user" | "agent"
 }
 
+export type AgentCreatedByFilter = string | "me"
+
+export type AgentTypeFilter =
+  | "notion_ai"
+  | "custom_agent"
+  | "autofill_custom_agent"
+  | "external"
+
+export type AgentListParams = PaginationParams & {
+  name?: string
+  agent_type?: AgentTypeFilter[]
+  agent_ids?: string[]
+  created_by?: AgentCreatedByFilter[]
+}
+
 export type SessionStatus =
   | "queued"
   | "in_progress"
@@ -427,35 +458,4 @@ export type SessionError = {
   code: string
   message: string
   retryable: boolean
-}
-
-export type SessionCancelParams = {
-  eventId?: string
-}
-
-export type SessionCancelResponse = {
-  object: "session"
-  id: string
-  agent_id: string
-  title: string
-  status: SessionStatus
-  created_at: string
-  updated_at: string
-  required_actions?: SessionRequiredAction[]
-  error?: SessionError
-}
-
-export type AgentCreatedByFilter = string | "me"
-
-export type AgentTypeFilter =
-  | "notion_ai"
-  | "custom_agent"
-  | "autofill_custom_agent"
-  | "external"
-
-export type AgentListParams = PaginationParams & {
-  name?: string
-  agent_type?: AgentTypeFilter[]
-  agent_ids?: string[]
-  created_by?: AgentCreatedByFilter[]
 }
