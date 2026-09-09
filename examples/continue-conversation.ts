@@ -41,10 +41,10 @@ async function main() {
   for (const message of messages) {
     console.log(`User: ${message}`)
 
-    const invocation = await agent.chat({
-      message,
-      threadId,
-    })
+    const invocation =
+      threadId === undefined
+        ? await agent.chat({ message })
+        : await agent.thread(threadId).sendMessage({ message })
 
     threadId = invocation.thread_id
 

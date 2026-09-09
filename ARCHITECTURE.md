@@ -18,7 +18,9 @@ Agent
 
 Thread
   ├── get()
-  └── poll()
+  ├── poll()
+  ├── listMessages()
+  └── sendMessage()
 ```
 
 ## Design decisions
@@ -149,7 +151,6 @@ The SDK is designed to be testable:
 
 The architecture makes it easy to add:
 
-- Thread message appending
 - Thread deletion
 - Agent creation/updating
 - Webhook support

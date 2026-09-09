@@ -1,6 +1,7 @@
 export type ThreadStatus =
   | "pending"
   | "requires_action"
+  | "canceled"
   | "completed"
   | "failed"
 
@@ -11,10 +12,21 @@ export type ThreadStatus =
 export const PERSONAL_AGENT_ID = "33333333-3333-3333-3333-333333333333" as const
 
 /**
+ * Stable alias for the personal agent, accepted anywhere an agent ID is
+ * expected. Normalized to {@link PERSONAL_AGENT_ID} server-side.
+ *
  * @deprecated Personal agent access is unsupported and should not be
  * used for new integrations.
  */
-export type PersonalAgentId = typeof PERSONAL_AGENT_ID
+export const PERSONAL_AGENT_ALIAS = "notion_ai" as const
+
+/**
+ * @deprecated Personal agent access is unsupported and should not be
+ * used for new integrations.
+ */
+export type PersonalAgentId =
+  | typeof PERSONAL_AGENT_ID
+  | typeof PERSONAL_AGENT_ALIAS
 
 export type AgentVersion = {
   id: string
@@ -89,6 +101,29 @@ export type AgentPermission = {
   scope?: "shared_pages"
 }
 
+export type AgentPauseReason =
+  | "run_limit"
+  | "credit_limit"
+  | "runaway_credit_usage"
+  | "workspace_credit_limit"
+  | "failure_limit"
+  | "mark_session_failed_autopause"
+  | "disabled_from_workspace_settings"
+  | "disabled_from_api"
+  | "disabled_from_agent_settings"
+  | "disabled_due_to_no_members_with_access"
+  | "disabled_due_to_lack_of_editors"
+  | "disabled_by_notion"
+  | "internal_error"
+  | "needs_user_review"
+  | "tool_unavailable"
+
+export type AgentTrigger = {
+  type: string
+  enabled: boolean
+  schedule: string | null
+}
+
 export type AgentData = {
   object: "agent"
   id: string
@@ -97,17 +132,20 @@ export type AgentData = {
   description: string | null
   instructions_page_id: string | null
   icon: AgentIcon | null
-  version: AgentVersion | null
+  agent_version: AgentVersion | null
   model: string | null
   model_mode: AgentModelMode | null
   connections: AgentConnection[]
   tools: AgentTool[]
   permissions: AgentPermission[]
   status: AgentStatus
+  pause_reason: AgentPauseReason | null
   created_by: AgentCreatedBy | null
-  created_time: string | null
-  last_edited_time: string | null
+  created_time: string
+  last_edited_time: string
   last_run_at: string | null
+  credit_limit: number | null
+  triggers: AgentTrigger[]
 }
 
 export type ThreadMessage = {
@@ -231,6 +269,7 @@ export type ChatInvocationResponse = {
   object: "chat.invocation"
   agent_id: string
   thread_id: string
+  invocation_id: string
   status: "pending"
 }
 
@@ -257,27 +296,38 @@ export type ChatStreamToolStatus =
   | "completed"
   | "failed"
 
+export type ChatStreamToolCategory =
+  | "search"
+  | "read"
+  | "write"
+  | "compute"
+  | "other"
+
 export type StreamChunk =
   | {
       type: "started"
+      invocation_id: string
       thread_id: string
       agent_id: string
       model: string
       metadata?: ChatLifecycleMetadata
     }
-  | ({ type: "message"; delta: string } & StreamMessage)
+  | ({ type: "message"; invocation_id: string; delta: string } & StreamMessage)
   | {
       type: "tool"
+      invocation_id: string
       id: string
-      agent_step_id: string | null
-      tool_call_id: string | null
-      tool_name: string
-      tool_type: string
+      category: ChatStreamToolCategory
       status: ChatStreamToolStatus
+      agent_step_id?: string | null
+      tool_call_id?: string | null
+      tool_name?: string
+      tool_type?: string
     }
   | {
       type: "done"
-      status: "completed" | "requires_action"
+      status: "completed" | "requires_action" | "canceled"
+      invocation_id: string
       thread_id: string
       model: string
       usage: ChatStreamUsage
@@ -287,9 +337,14 @@ export type StreamChunk =
       metadata?: ChatLifecycleMetadata
       pending_user_actions?: PendingUserAction[]
     }
-  | { type: "waiting_for_user"; pending_user_actions: PendingUserAction[] }
+  | {
+      type: "waiting_for_user"
+      invocation_id: string
+      pending_user_actions: PendingUserAction[]
+    }
   | {
       type: "error"
+      invocation_id?: string
       code:
         | "object_not_found"
         | "validation_error"
@@ -356,10 +411,28 @@ export type ThreadListResponse = PaginatedResponse<ThreadListItem> & {
   type: "thread"
 }
 
+export type ThreadActivity =
+  | "all"
+  | "pending"
+  | "in_progress"
+  | "failed"
+  | "success"
+
+export type ThreadActorFilter = string | "me"
+
+export type ThreadSortBy = "created_time" | "last_used_time"
+
+export type ThreadSortDirection = "ascending" | "descending"
+
 export type ThreadListParams = PaginationParams & {
   id?: string
   title?: string
   status?: ThreadStatus
+  activity?: ThreadActivity
+  created_by?: ThreadActorFilter[]
+  last_used_by?: ThreadActorFilter[]
+  sort_by?: ThreadSortBy
+  sort_direction?: ThreadSortDirection
 }
 
 export type ThreadMessageParent = {

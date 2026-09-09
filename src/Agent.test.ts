@@ -443,10 +443,11 @@ describe("Agent", () => {
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://api.notion.com/v1/agents/agent_123/chatStream",
+        "https://api.notion.com/v1/agents/agent_123/chat",
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({
+            Accept: "application/x-ndjson",
             Authorization: "Bearer test_token",
           }),
         }),
@@ -477,7 +478,7 @@ describe("Agent", () => {
       }
 
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://api.notion.com/v1/agents/agent_123/chatStream?verbose=false",
+        "https://api.notion.com/v1/agents/agent_123/chat?verbose=false",
         expect.any(Object),
       )
     })

@@ -81,11 +81,23 @@ export class Agent {
     }
   }
 
+  /**
+   * Start a new chat, or continue an existing one via `threadId`.
+   *
+   * Note: passing `threadId` to continue an existing thread is deprecated.
+   * Prefer `client.agents.agent(agentId).thread(threadId).sendMessage(...)`
+   * (which calls `POST /v1/threads/:thread_id/messages`) to append to an
+   * existing thread.
+   */
   async chat(
     args:
       | {
           message: string
           attachments?: ChatAttachmentInput[]
+          /**
+           * @deprecated Use `client.agents.agent(agentId).thread(threadId).sendMessage(...)`
+           * to continue an existing thread.
+           */
           threadId?: string
           metadata?: ChatLifecycleMetadata
           promptContext?: string
@@ -93,6 +105,10 @@ export class Agent {
       | {
           message?: string
           attachments: ChatAttachmentInput[]
+          /**
+           * @deprecated Use `client.agents.agent(agentId).thread(threadId).sendMessage(...)`
+           * to continue an existing thread.
+           */
           threadId?: string
           metadata?: ChatLifecycleMetadata
           promptContext?: string
@@ -145,10 +161,19 @@ export class Agent {
   }
 
   async listThreads(params?: ThreadListParams): Promise<ThreadListResponse> {
-    const query: Record<string, string | number> = {}
+    const query: Record<string, string | number | string[]> = {}
     if (params?.id) query.id = params.id
     if (params?.title) query.title = params.title
     if (params?.status) query.status = params.status
+    if (params?.activity) query.activity = params.activity
+    if (params?.created_by && params.created_by.length > 0) {
+      query.created_by = params.created_by
+    }
+    if (params?.last_used_by && params.last_used_by.length > 0) {
+      query.last_used_by = params.last_used_by
+    }
+    if (params?.sort_by) query.sort_by = params.sort_by
+    if (params?.sort_direction) query.sort_direction = params.sort_direction
     if (params?.start_cursor) query.start_cursor = params.start_cursor
     if (params?.page_size) query.page_size = params.page_size
 
@@ -201,9 +226,9 @@ export class Agent {
     promptContext?: string
     onMessage?: (message: StreamMessage) => void
   }): AsyncGenerator<StreamChunk, ThreadInfo, undefined> {
-    const url = new URL(`${this.baseUrl}/v1/agents/${this.id}/chatStream`)
-    if (args.verbose === false) {
-      url.searchParams.set("verbose", "false")
+    const url = new URL(`${this.baseUrl}/v1/agents/${this.id}/chat`)
+    if (args.verbose !== undefined) {
+      url.searchParams.set("verbose", String(args.verbose))
     }
 
     const response = await fetch(
@@ -211,6 +236,7 @@ export class Agent {
       {
         method: "POST",
         headers: {
+          Accept: "application/x-ndjson",
           Authorization: `Bearer ${this.auth}`,
           "Content-Type": "application/json",
           "Notion-Version": this.notionVersion,

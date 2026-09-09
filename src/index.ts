@@ -35,6 +35,8 @@ export type {
   AgentTool,
   AgentPermission,
   AgentPermissionAccessLevel,
+  AgentPauseReason,
+  AgentTrigger,
   ChatAttachmentInput,
   ChatLifecycleMetadata,
   ThreadMessage,
@@ -46,6 +48,7 @@ export type {
   ChatStreamUsage,
   ChatStreamArtifact,
   ChatStreamToolStatus,
+  ChatStreamToolCategory,
   StreamChunk,
   StreamMessage,
   ThreadInfo,
@@ -58,6 +61,10 @@ export type {
   ThreadListItem,
   ThreadListResponse,
   ThreadListParams,
+  ThreadActivity,
+  ThreadActorFilter,
+  ThreadSortBy,
+  ThreadSortDirection,
   ThreadMessageItem,
   ThreadMessageListResponse,
   ThreadMessageListParams,
@@ -70,4 +77,4 @@ export type {
   PendingUserActionRequirement,
   ContinueThreadArgs,
 } from "./types.js"
-export { PERSONAL_AGENT_ID } from "./types.js"
+export { PERSONAL_AGENT_ALIAS, PERSONAL_AGENT_ID } from "./types.js"

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { Thread } from "./Thread.js"
+import { ThreadNotFoundError } from "./errors.js"
 import {
   createMockClient,
   mockChatInvocation,
@@ -10,7 +11,6 @@ import {
   mockThreadNotFound,
   mockValidationError,
 } from "./test-utils/index.js"
-import { ThreadNotFoundError } from "./errors.js"
 
 describe("Thread", () => {
   describe("get", () => {
@@ -143,6 +143,139 @@ describe("Thread", () => {
       })
 
       await thread.listMessages({ verbose: false })
+    })
+  })
+
+  describe("sendMessage", () => {
+    it("should send a message to the thread", async () => {
+      const mockResponse = mockChatInvocation({
+        agent_id: "agent_123",
+        thread_id: "thread_456",
+      })
+
+      const mockClient = createMockClient(async ({ path, method, body }) => {
+        expect(path).toBe("threads/thread_456/messages")
+        expect(method).toBe("post")
+        expect(body).toEqual({ message: "Follow up" })
+        return mockResponse
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      const result = await thread.sendMessage({ message: "Follow up" })
+
+      expect(result).toEqual(mockResponse)
+    })
+
+    it("should send attachments-only requests", async () => {
+      const mockResponse = mockChatInvocation()
+
+      const mockClient = createMockClient(async ({ path, method, body }) => {
+        expect(path).toBe("threads/thread_456/messages")
+        expect(method).toBe("post")
+        expect(body).toEqual({
+          attachments: [
+            {
+              file_upload: { id: "upload_123" },
+              name: "spec.pdf",
+            },
+          ],
+        })
+        return mockResponse
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      await thread.sendMessage({
+        attachments: [{ fileUploadId: "upload_123", name: "spec.pdf" }],
+      })
+    })
+
+    it("should forward metadata and promptContext in request body", async () => {
+      const mockResponse = mockChatInvocation()
+
+      const mockClient = createMockClient(async ({ body }) => {
+        expect(body).toEqual({
+          message: "Hello",
+          metadata: { user_id: "external-user-1" },
+          prompt_context: "Extra context.",
+        })
+        return mockResponse
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      await thread.sendMessage({
+        message: "Hello",
+        metadata: { user_id: "external-user-1" },
+        promptContext: "Extra context.",
+      })
+    })
+
+    it("should throw ThreadNotFoundError when thread doesn't exist", async () => {
+      const mockClient = createMockClient(async () => {
+        throw mockThreadNotFound("thread_456")
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      await expect(
+        thread.sendMessage({ message: "Hello" }),
+      ).rejects.toBeInstanceOf(ThreadNotFoundError)
+    })
+
+    it("should validate missing message and attachments", async () => {
+      const mockClient = createMockClient(async () => {
+        throw new Error("Should not be called")
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      await expect(
+        thread.sendMessage({ message: "   " }),
+      ).rejects.toMatchObject({
+        code: "validation_error",
+        message: "Either message or attachments is required.",
+      })
+    })
+
+    it("should not swallow non-thread-not-found errors", async () => {
+      const mockClient = createMockClient(async () => {
+        throw mockValidationError("Bad request.")
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      await expect(
+        thread.sendMessage({ message: "Hello" }),
+      ).rejects.toMatchObject({
+        code: "validation_error",
+        message: "Bad request.",
+      })
     })
   })
 
@@ -327,7 +460,7 @@ describe("Thread", () => {
       expect(onThreadNotFound).toHaveBeenCalledTimes(2)
     })
 
-    it("should stop polling when the thread requires user action", async () => {
+    it.each(["requires_action", "canceled"] as const)("should stop polling when the thread is %s", async (status) => {
       let callCount = 0
       const mockClient = createMockClient(async () => {
         callCount++
@@ -335,7 +468,7 @@ describe("Thread", () => {
           results: [
             mockThreadListItem({
               id: "thread_456",
-              status: callCount < 2 ? "pending" : "requires_action",
+              status: callCount < 2 ? "pending" : status,
             }),
           ],
         })
@@ -356,7 +489,7 @@ describe("Thread", () => {
 
       const result = await pollPromise
 
-      expect(result.status).toBe("requires_action")
+      expect(result.status).toBe(status)
       expect(callCount).toBe(2)
     })
 
