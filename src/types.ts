@@ -354,14 +354,21 @@ export type SessionTimestampCondition = {
   after?: string
   on_or_before?: string
   on_or_after?: string
-}
+} & (
+  | { before: string }
+  | { after: string }
+  | { on_or_before: string }
+  | { on_or_after: string }
+)
 
 export type SessionFilter =
   | { property: "id"; string: { equals: string } }
   | { property: "agent_id"; string: { equals: string } }
   | {
       property: "status"
-      status: { equals?: SessionStatus; in?: SessionStatus[] }
+      status:
+        | { equals: SessionStatus; in?: SessionStatus[] }
+        | { equals?: SessionStatus; in: [SessionStatus, ...SessionStatus[]] }
     }
   | {
       property: "created_at" | "updated_at"
