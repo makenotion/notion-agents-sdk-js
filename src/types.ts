@@ -394,6 +394,32 @@ export type ThreadListParams = PaginationParams & {
   sort_direction?: ThreadSortDirection
 }
 
+export type SessionStatus =
+  | "queued"
+  | "in_progress"
+  | "requires_action"
+  | "completed"
+  | "failed"
+  | "canceled"
+  | "terminated"
+
+export type SessionRequiredActionOption = {
+  id: "approve" | "reject"
+  label: string
+}
+
+export type SessionRequiredAction = {
+  action_id: string
+  title: string
+  options: SessionRequiredActionOption[]
+}
+
+export type SessionError = {
+  code: string
+  message: string
+  retryable: boolean
+}
+
 export type ThreadMessageParent = {
   type: "thread"
   id: string
@@ -432,30 +458,4 @@ export type AgentListParams = PaginationParams & {
   agent_type?: AgentTypeFilter[]
   agent_ids?: string[]
   created_by?: AgentCreatedByFilter[]
-}
-
-export type SessionStatus =
-  | "queued"
-  | "in_progress"
-  | "requires_action"
-  | "completed"
-  | "failed"
-  | "canceled"
-  | "terminated"
-
-export type SessionRequiredActionOption = {
-  id: "approve" | "reject"
-  label: string
-}
-
-export type SessionRequiredAction = {
-  action_id: string
-  title: string
-  options: SessionRequiredActionOption[]
-}
-
-export type SessionError = {
-  code: string
-  message: string
-  retryable: boolean
 }
