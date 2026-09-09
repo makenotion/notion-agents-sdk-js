@@ -5,12 +5,12 @@ import type {
   ChatLifecycleMetadata,
   ThreadData,
   PollThreadOptions,
-  SessionCancelParams,
-  SessionCancelResponse,
   ThreadMessageListParams,
   ThreadMessageListResponse,
   ThreadListResponse,
   ThreadListItem,
+  SessionCancelParams,
+  SessionCancelResponse,
 } from "./types.js"
 import {
   NotionAgentsError,
