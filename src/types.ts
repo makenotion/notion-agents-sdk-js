@@ -124,7 +124,7 @@ export type AgentTriggerScheduleEnd =
  * the remaining fields refine the cadence and are omitted when not applicable.
  */
 export type AgentTriggerSchedule = {
-  frequency: string
+  frequency: "hour" | "day" | "week" | "month" | "year"
   interval: number
   weekdays?: string[]
   monthdays?: number[]
