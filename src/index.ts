@@ -51,6 +51,8 @@ export type {
   AgentPermissionAccessLevel,
   AgentPauseReason,
   AgentTrigger,
+  AgentTriggerSchedule,
+  AgentTriggerScheduleEnd,
   ChatAttachmentInput,
   ChatLifecycleMetadata,
   ThreadMessage,

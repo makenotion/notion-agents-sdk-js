@@ -119,10 +119,43 @@ export type AgentPauseReason =
   | "needs_user_review"
   | "tool_unavailable"
 
+/** When a recurrence trigger's schedule stops, when it is bounded. */
+export type AgentTriggerScheduleEnd =
+  | { type: "date"; end_at: string }
+  | { type: "count"; occurrences: number }
+
+/**
+ * A structured recurrence cadence. `frequency` is the base unit (`"hour"`,
+ * `"day"`, `"week"`, `"month"` or `"year"`) and `interval` its multiplier;
+ * the remaining fields refine the cadence and are omitted when not applicable.
+ */
+export type AgentTriggerSchedule = {
+  frequency: "hour" | "day" | "week" | "month" | "year"
+  interval: number
+  weekdays?: string[]
+  monthdays?: number[]
+  /**
+   * Week-of-month ordinals for a monthly weekday cadence (e.g. `[2, 3]` for
+   * the 2nd and 3rd occurrence); `-1` means the last week of the month.
+   */
+  week_numbers?: number[]
+  hour?: number
+  minute?: number
+  timezone?: string
+  start_date?: string
+  end?: AgentTriggerScheduleEnd
+}
+
 export type AgentTrigger = {
   type: string
   enabled: boolean
-  schedule: string | null
+  /** Present only for recurrence triggers. */
+  schedule?: AgentTriggerSchedule
+  /**
+   * Remaining per-type trigger configuration (e.g. watched channel IDs), with
+   * keys in snake_case. Present only when the trigger carries such state.
+   */
+  config?: Record<string, unknown>
 }
 
 export type AgentData = {
@@ -131,6 +164,12 @@ export type AgentData = {
   agent_type: AgentType
   name: string
   description: string | null
+  /**
+   * The agent's inline instructions. Only present when the request was made
+   * with `verbose: true`, and `null` when the instructions are stored on a
+   * page (see `instructions_page_id`).
+   */
+  instructions?: string | null
   instructions_page_id: string | null
   icon: AgentIcon | null
   agent_version: AgentVersion | null
@@ -170,9 +209,11 @@ export type ChatAttachmentInput = {
   name?: string
 }
 
-export type ChatLifecycleMetadata = {
-  user_id?: string
-}
+/**
+ * Caller-provided string metadata persisted with the user message. `user_id`
+ * is used for lifecycle correlation and does not change authorization.
+ */
+export type ChatLifecycleMetadata = Record<string, string>
 
 export type ThreadMessageAttachment = {
   name: string
@@ -731,4 +772,5 @@ export type AgentListParams = PaginationParams & {
   agent_type?: AgentTypeFilter[]
   agent_ids?: string[]
   created_by?: AgentCreatedByFilter[]
+  verbose?: boolean
 }

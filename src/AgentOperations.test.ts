@@ -222,6 +222,27 @@ describe("AgentOperations", () => {
 
       await operations.list({ agent_ids: [] })
     })
+
+    it("should support requesting inline instructions", async () => {
+      const mockResponse = mockAgentListResponse({
+        results: [mockAgentData({ instructions: "Be concise." })],
+      })
+
+      const mockClient = createMockClient(async ({ query }) => {
+        expect(query).toEqual({ verbose: "true" })
+        return mockResponse
+      })
+
+      const operations = new AgentOperations({
+        client: mockClient,
+        auth: "test_token",
+        baseUrl: "https://api.notion.com",
+      })
+
+      const result = await operations.list({ verbose: true })
+
+      expect(result.results[0].instructions).toBe("Be concise.")
+    })
   })
 
   describe("agent", () => {
