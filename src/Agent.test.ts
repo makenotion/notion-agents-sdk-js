@@ -314,6 +314,39 @@ describe("Agent", () => {
     })
   })
 
+  describe("continueThread", () => {
+    it("should post to the thread continue endpoint", async () => {
+      const mockResponse = mockChatInvocation({
+        agent_id: "agent_123",
+        thread_id: "thread_456",
+      })
+
+      const mockClient = createMockClient(async ({ path, method, body }) => {
+        expect(path).toBe("threads/thread_456/continue")
+        expect(method).toBe("post")
+        expect(body).toEqual({
+          action_id: "action_1",
+          option_id: "reject",
+        })
+        return mockResponse
+      })
+
+      const agent = new Agent({
+        client: mockClient,
+        id: "agent_123",
+        baseUrl: "https://api.notion.com",
+        auth: "test_token",
+      })
+
+      const result = await agent.continueThread("thread_456", {
+        actionId: "action_1",
+        optionId: "reject",
+      })
+
+      expect(result).toEqual(mockResponse)
+    })
+  })
+
   describe("getThread", () => {
     it("should get thread", async () => {
       const mockResponse = mockThreadListResponse({

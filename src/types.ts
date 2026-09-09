@@ -1,4 +1,9 @@
-export type ThreadStatus = "pending" | "completed" | "failed"
+export type ThreadStatus =
+  | "pending"
+  | "requires_action"
+  | "canceled"
+  | "completed"
+  | "failed"
 
 /**
  * @deprecated Personal agent access is unsupported and should not be
@@ -206,6 +211,58 @@ export type StreamMessage =
       content_parts?: AgentContentPart[]
     }
 
+export type ContinueThreadArgs =
+  | { actionId: string; optionId: "approve" | "reject" }
+  | {
+      actionId: string
+      optionId: "use_connection"
+      input: { connectionId: string }
+    }
+
+export type PendingUserActionRequirement =
+  | { type: "general" }
+  | {
+      type: "url_safety"
+      urls: string[]
+      required_by_workspace_policy?: boolean
+    }
+  | {
+      type: "permission_escalation"
+      destination_title?: string
+      source_titles?: string[]
+    }
+  | { type: "manage_workers" }
+  | {
+      type: "delete_content"
+      page_count: number
+      database_count: number
+      meeting_notes_block_count?: number
+    }
+  | {
+      type: "connect_integration"
+      integration_type: string
+      integration_name: string
+      handoff_url: string
+    }
+  | { type: "admin_mode"; explanation?: string }
+
+export type PendingUserActionOption =
+  | { id: "approve"; label: string }
+  | { id: "reject"; label: string }
+  | {
+      id: "use_connection"
+      label: string
+      input: { type: "connection_id"; required: true }
+    }
+
+export type PendingUserAction = {
+  id: string
+  type: "tool_confirmation"
+  title: string
+  requirements: PendingUserActionRequirement[]
+  options: PendingUserActionOption[]
+}
+
 export type ThreadData = {
   object: "thread"
   agent_id: string
@@ -213,6 +270,7 @@ export type ThreadData = {
   status: ThreadStatus
   messages: Array<ThreadMessage>
   error?: string
+  pending_user_actions?: PendingUserAction[]
 }
 
 export type ChatInvocationResponse = {
@@ -276,6 +334,7 @@ export type StreamChunk =
     }
   | {
       type: "done"
+      status: "completed" | "requires_action" | "canceled"
       invocation_id: string
       thread_id: string
       model: string
@@ -284,8 +343,13 @@ export type StreamChunk =
       connections_used: string[]
       artifacts: ChatStreamArtifact[]
       metadata?: ChatLifecycleMetadata
+      pending_user_actions?: PendingUserAction[]
     }
-  | { type: "waiting_for_user"; invocation_id: string }
+  | {
+      type: "waiting_for_user"
+      invocation_id: string
+      pending_user_actions: PendingUserAction[]
+    }
   | {
       type: "error"
       invocation_id?: string
@@ -348,6 +412,7 @@ export type ThreadListItem = {
     type: "user" | "bot"
   }
   agent_version: AgentVersion | null
+  pending_user_actions?: PendingUserAction[]
 }
 
 export type ThreadListResponse = PaginatedResponse<ThreadListItem> & {
@@ -392,6 +457,7 @@ export type ThreadMessageItem = {
   parent: ThreadMessageParent
   attachments?: ThreadMessageAttachment[]
   content_parts?: AgentContentPart[]
+  pending_user_actions?: PendingUserAction[]
 }
 
 export type ThreadMessageListResponse = PaginatedResponse<ThreadMessageItem> & {

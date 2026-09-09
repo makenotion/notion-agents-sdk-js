@@ -2,6 +2,7 @@ import { Client } from "@notionhq/client"
 import type {
   ChatAttachmentInput,
   ChatInvocationResponse,
+  ContinueThreadArgs,
   ChatLifecycleMetadata,
   ThreadData,
   PollThreadOptions,
@@ -87,6 +88,29 @@ export class Thread {
     }
   }
 
+  async continue(args: ContinueThreadArgs): Promise<ChatInvocationResponse> {
+    const body: Record<string, unknown> = {
+      action_id: args.actionId,
+      option_id: args.optionId,
+    }
+    if (args.optionId === "use_connection") {
+      body.input = { connection_id: args.input.connectionId }
+    }
+
+    try {
+      return await this.client.request<ChatInvocationResponse>({
+        path: `threads/${this.threadId}/continue`,
+        method: "post",
+        body,
+      })
+    } catch (error) {
+      if (isObjectNotFoundErrorForType(error, "thread")) {
+        throw new ThreadNotFoundError(this.threadId)
+      }
+      throw error
+    }
+  }
+
   async poll(options: PollThreadOptions = {}): Promise<ThreadListItem> {
     const {
       maxAttempts = 60,
@@ -105,7 +129,12 @@ export class Thread {
       try {
         const thread = await this.get()
 
-        if (thread.status === "completed" || thread.status === "failed") {
+        if (
+          thread.status === "completed" ||
+          thread.status === "failed" ||
+          thread.status === "requires_action" ||
+          thread.status === "canceled"
+        ) {
           return thread
         }
 

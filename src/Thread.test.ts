@@ -146,6 +146,79 @@ describe("Thread", () => {
     })
   })
 
+  describe("continue", () => {
+    it("should post an approve action to the continue endpoint", async () => {
+      const mockResponse = mockChatInvocation({
+        agent_id: "agent_123",
+        thread_id: "thread_456",
+      })
+
+      const mockClient = createMockClient(async ({ path, method, body }) => {
+        expect(path).toBe("threads/thread_456/continue")
+        expect(method).toBe("post")
+        expect(body).toEqual({
+          action_id: "action_1",
+          option_id: "approve",
+        })
+        return mockResponse
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      const result = await thread.continue({
+        actionId: "action_1",
+        optionId: "approve",
+      })
+
+      expect(result).toEqual(mockResponse)
+    })
+
+    it("should serialize a use_connection option with wire-format input", async () => {
+      const mockResponse = mockChatInvocation()
+
+      const mockClient = createMockClient(async ({ body }) => {
+        expect(body).toEqual({
+          action_id: "action_1",
+          option_id: "use_connection",
+          input: { connection_id: "conn_1" },
+        })
+        return mockResponse
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      await thread.continue({
+        actionId: "action_1",
+        optionId: "use_connection",
+        input: { connectionId: "conn_1" },
+      })
+    })
+
+    it("should translate an object_not_found error into ThreadNotFoundError", async () => {
+      const mockClient = createMockClient(async () => {
+        throw mockThreadNotFound("thread_456")
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      await expect(
+        thread.continue({ actionId: "action_1", optionId: "approve" }),
+      ).rejects.toBeInstanceOf(ThreadNotFoundError)
+    })
+  })
+
   describe("sendMessage", () => {
     it("should send a message to the thread", async () => {
       const mockResponse = mockChatInvocation({
@@ -385,6 +458,39 @@ describe("Thread", () => {
 
       expect(result.status).toBe("completed")
       expect(onThreadNotFound).toHaveBeenCalledTimes(2)
+    })
+
+    it.each(["requires_action", "canceled"] as const)("should stop polling when the thread is %s", async (status) => {
+      let callCount = 0
+      const mockClient = createMockClient(async () => {
+        callCount++
+        return mockThreadListResponse({
+          results: [
+            mockThreadListItem({
+              id: "thread_456",
+              status: callCount < 2 ? "pending" : status,
+            }),
+          ],
+        })
+      })
+
+      const thread = new Thread({
+        client: mockClient,
+        threadId: "thread_456",
+        agentId: "agent_123",
+      })
+
+      const pollPromise = thread.poll({
+        maxAttempts: 10,
+        initialDelayMs: 0,
+      })
+
+      await vi.runAllTimersAsync()
+
+      const result = await pollPromise
+
+      expect(result.status).toBe(status)
+      expect(callCount).toBe(2)
     })
 
     it("should not treat validation_error as thread not found", async () => {
