@@ -335,6 +335,22 @@ Returns `Promise<SessionListResponse>`.
 
 ### `Thread`
 
+#### `cancel(params?)`
+
+Cancels the current nonterminal turn in the session, optionally scoped to
+the turn identified by a session event. Calls `POST
+/v1/sessions/:session_id/cancel`.
+
+```ts
+await thread.cancel({
+  eventId?: string, // omit to cancel the current nonterminal turn
+})
+```
+
+Returns `Promise<SessionCancelResponse>` — the canonical session with its
+current `status` (for example `"canceled"` when a cancellation was
+applied, or the terminal status the session was already in).
+
 #### `get()`
 
 Fetches thread metadata:

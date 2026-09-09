@@ -17,6 +17,7 @@ export {
   mockSessionEventListResponse,
   mockSessionMessageEvent,
   mockThreadData,
+  mockSessionCancelResponse,
   mockThreadListItem,
   mockThreadListResponse,
   mockThreadMessageItem,

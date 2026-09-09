@@ -149,6 +149,22 @@ export type ThreadMessage = {
   content: string
 }
 
+export type SessionCancelParams = {
+  eventId?: string
+}
+
+export type SessionCancelResponse = {
+  object: "session"
+  id: string
+  agent_id: string
+  title: string
+  status: SessionStatus
+  created_at: string
+  updated_at: string
+  required_actions?: SessionRequiredAction[]
+  error?: SessionError
+}
+
 export type ChatAttachmentInput = {
   fileUploadId: string
   name?: string

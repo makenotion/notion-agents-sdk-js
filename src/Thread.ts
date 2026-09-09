@@ -12,6 +12,8 @@ import type {
   ThreadMessageListResponse,
   ThreadListResponse,
   ThreadListItem,
+  SessionCancelParams,
+  SessionCancelResponse,
 } from "./types.js"
 import {
   NotionAgentsError,
@@ -29,6 +31,24 @@ export class Thread {
     this.client = args.client
     this.threadId = args.threadId
     this.agentId = args.agentId
+  }
+
+  async cancel(params?: SessionCancelParams): Promise<SessionCancelResponse> {
+    const body: Record<string, unknown> = {}
+    if (params?.eventId !== undefined) body.event_id = params.eventId
+
+    try {
+      return await this.client.request<SessionCancelResponse>({
+        path: `sessions/${this.threadId}/cancel`,
+        method: "post",
+        body,
+      })
+    } catch (error) {
+      if (isObjectNotFoundErrorForType(error, "thread")) {
+        throw new ThreadNotFoundError(this.threadId)
+      }
+      throw error
+    }
   }
 
   async get(): Promise<ThreadListItem> {

@@ -7,6 +7,7 @@ import type {
   SessionEventListResponse,
   SessionMessageEvent,
   ThreadData,
+  SessionCancelResponse,
   ThreadListResponse,
   ThreadMessageListResponse,
   ThreadListItem,
@@ -25,6 +26,19 @@ export class MockNotionAPIError extends Error {
     Object.setPrototypeOf(this, MockNotionAPIError.prototype)
   }
 }
+
+export const mockSessionCancelResponse = (
+  overrides?: Partial<SessionCancelResponse>,
+): SessionCancelResponse => ({
+  object: "session",
+  id: "thread_456",
+  agent_id: "agent_123",
+  title: "Test Thread",
+  status: "canceled",
+  created_at: "2025-01-01T00:00:00.000Z",
+  updated_at: "2025-01-01T00:01:00.000Z",
+  ...overrides,
+})
 
 export const mockAgentData = (overrides?: Partial<AgentData>): AgentData => ({
   object: "agent",

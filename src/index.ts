@@ -86,6 +86,8 @@ export type {
   ThreadMessageItem,
   ThreadMessageListResponse,
   ThreadMessageListParams,
+  SessionCancelParams,
+  SessionCancelResponse,
   AgentListParams,
   AgentCreatedByFilter,
   AgentTypeFilter,
