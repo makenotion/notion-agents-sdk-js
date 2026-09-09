@@ -2,7 +2,6 @@ import type {
   AgentData,
   AgentListResponse,
   ChatInvocationResponse,
-  SessionEvent,
   SessionEventListResponse,
   SessionMessageEvent,
   ThreadData,
@@ -160,7 +159,8 @@ export const mockSessionEventListResponse = (
 ): SessionEventListResponse => ({
   object: "list",
   type: "session_event",
-  results: [mockSessionMessageEvent()] as SessionEvent[],
+  session_event: {},
+  results: [mockSessionMessageEvent()],
   has_more: false,
   next_cursor: null,
   ...overrides,
